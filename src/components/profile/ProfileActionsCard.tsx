@@ -1,8 +1,25 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldAlert } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
+import { LogoutService } from '@/services/authService'
 
 export default function ProfileActionsCard() {
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+
+  const handleLogout = async () => {
+    setLoading(true)
+    try {
+      await LogoutService() // server xóa cookie
+    } catch {
+      // kể cả lỗi vẫn redirect về login
+    } finally {
+      setLoading(false)
+      navigate('/login', { replace: true })
+    }
+  }
+
   return (
     <section className="rounded-[2rem] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
       <div className="flex items-center gap-3">
@@ -22,10 +39,12 @@ export default function ProfileActionsCard() {
 
         <Button
           variant="destructive"
+          onClick={handleLogout}
+          disabled={loading}
           className="mt-5 h-12 w-full rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200"
         >
           <LogOut className="size-4" />
-          Đăng xuất
+          {loading ? 'Đang đăng xuất...' : 'Đăng xuất'}
         </Button>
       </div>
     </section>

@@ -7,8 +7,21 @@ import LandingHeroSection from '@/components/landing/LandingHeroSection'
 import LandingInsightsSection from '@/components/landing/LandingInsightsSection'
 import { FloatingOrb } from '@/components/landing/LandingShared'
 import LandingTestimonialsSection from '@/components/landing/LandingTestimonialsSection'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/auth/useAuth'
 
 export default function LandingPage() {
+  const { token, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (token) {
+    return <Navigate to="/home" replace />
+  }
+
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#f8fafc] text-slate-900">
       <div className="relative isolate">

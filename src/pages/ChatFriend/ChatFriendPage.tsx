@@ -7,8 +7,6 @@ const ChatFriendPage = () => (
   <section className="h-screen overflow-hidden">
     <div className="grid h-full gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <FriendChatSidebar />
-   
-
       <main className="min-h-0 flex flex-col">
         <div className="shrink-0">
           <FriendChatHeader />

@@ -1,6 +1,32 @@
 import { Bell, Search, Settings } from 'lucide-react'
+import { useAuth } from '@/hooks/auth/useAuth'
+import type { AuthUser } from "@/types/auth"
+import { getMeService } from '@/services/authService'   
+import { useEffect, useState } from "react"
 
 export default function HomeHeader() {
+  const { user } = useAuth()
+  const [data, setData] = useState<AuthUser | null>(null)
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+      const res = await getMeService()
+      setData(res) 
+    } catch (err) {
+      console.error(err)
+    }
+    }
+
+    fetchMe()
+  }, [])
+
+  const displayName1 = data?.displayName || data?.username
+  const displayName = user?.displayName || user?.username
+  const finalName = displayName1 || displayName || "User"
+
+
+
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="relative max-w-2xl flex-1">
@@ -24,10 +50,10 @@ export default function HomeHeader() {
 
         <div className="flex items-center gap-3 rounded-full bg-white/90 py-1.5 pl-1.5 pr-4 shadow-[0_10px_20px_rgba(15,23,42,0.08)]">
           <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-rose-100 to-blue-200 text-sm font-semibold text-slate-700">
-            AN
+            {finalName[0].toUpperCase()} 
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">An Nhi</p>
+            <p className="text-sm font-semibold text-slate-700">{finalName}</p>
             <p className="text-xs text-slate-400">Keep showing up</p>
           </div>
         </div>
