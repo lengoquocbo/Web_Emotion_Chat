@@ -10,10 +10,10 @@ export default function GroupHeader() {
           </div>
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-800">
-              Mindfulness Collective
+              Chủ đề thảo luận: "Tâm trạng hôm nay của bạn thế nào?"
             </h1>
             <p className="mt-1 text-sm font-medium uppercase tracking-[0.15em] text-slate-400">
-              24 Active Souls
+              4 thành viên, 128 bài viết
             </p>
           </div>
         </div>

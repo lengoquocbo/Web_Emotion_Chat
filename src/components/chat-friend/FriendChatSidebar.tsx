@@ -4,7 +4,7 @@ import { friendThreads } from './chat-friend-data'
 
 export default function FriendChatSidebar() {
   return (
-    <aside className="rounded-[2rem] bg-white/92 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+    <aside className="rounded-[2rem] bg-white/50 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-400">Private Chats</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-800">Friends</h2>

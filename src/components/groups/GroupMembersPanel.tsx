@@ -4,8 +4,9 @@ import { groupMembers } from './groups-data'
 
 export default function GroupMembersPanel() {
   return (
-    <aside className="flex flex-col gap-5 rounded-[2rem] bg-white/92 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)] xl:min-h-[calc(100vh-13rem)]">
+    <aside className="flex flex-col h-full overflow-y-auto gap-5 rounded-[2rem] bg-white p-5  xl:min-h-[calc(100vh-13rem)]">
       <div className="space-y-5">
+        <p>ALL Member </p>
         {groupMembers.map((member) => (
           <div key={member.name} className="flex items-center gap-4">
             <div className="relative">

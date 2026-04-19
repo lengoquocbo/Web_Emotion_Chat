@@ -5,14 +5,14 @@ import FriendConversation from '@/components/chat-friend/FriendConversation'
 
 const ChatFriendPage = () => (
   <section className="h-screen overflow-hidden">
-    <div className="grid h-full gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid h-full xl:grid-cols-[400px_minmax(0,1fr)]">
         <FriendChatSidebar />
-      <main className="min-h-0 flex flex-col">
-        <div className="shrink-0">
+      <main className=" flex h-full flex-col overflow-y-auto rounded-[2rem] bg-white/92 p-6 ">
+        <div className=" h-50 shrink-0 ">
           <FriendChatHeader />
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto mt-6">
+        <div className="min-h-0 w-full bg-white/92 flex-1 overflow-y-auto mt-2 rounded-[2rem]">
           <FriendConversation />
         </div>
 

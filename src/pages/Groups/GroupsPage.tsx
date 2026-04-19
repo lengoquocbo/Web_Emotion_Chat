@@ -12,9 +12,7 @@ const GroupsPage = () => (
           <GroupHeader />
         </div>
 
-        <div className="shrink-0 mt-6">
-          <GroupTopicBar />
-        </div>
+      
 
         <div className="min-h-0 flex-1 mt-6 overflow-y-auto">
           <GroupThread />

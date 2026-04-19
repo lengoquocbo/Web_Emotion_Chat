@@ -4,7 +4,7 @@ import HomeHero from '@/components/home/HomeHero'
 import HomeRightPanel from '@/components/home/HomeRightPanel'
 
 const HomePage = () => (
-  <div className="space-y-8">
+  <div className="space-y-8 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 ">
     <HomeHeader />
     <HomeHero />
 

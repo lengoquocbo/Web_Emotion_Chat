@@ -4,7 +4,7 @@ import { groupMessages } from './groups-data'
 
 export default function GroupThread() {
   return (
-    <section className="rounded-[2rem] bg-[linear-gradient(180deg,#fbfdff_0%,#fdfefe_100%)] px-4 py-6 sm:px-6 lg:px-10">
+    <section className="rounded-[2rem] bg-white  x-4 py-6 sm:px-6 ">
       <div className="mx-auto max-w-4xl space-y-12">
         {groupMessages.map((message) => {
           const isSelf = message.role === 'self'
