@@ -2,7 +2,6 @@ import GroupComposer from '@/components/groups/GroupComposer'
 import GroupHeader from '@/components/groups/GroupHeader'
 import GroupMembersPanel from '@/components/groups/GroupMembersPanel'
 import GroupThread from '@/components/groups/GroupThread'
-import GroupTopicBar from '@/components/groups/GroupTopicBar'
 
 const GroupsPage = () => (
   <section className="h-screen overflow-hidden">

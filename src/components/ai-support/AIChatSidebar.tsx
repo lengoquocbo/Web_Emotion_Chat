@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MessageSquarePlus, Search, Sparkles } from 'lucide-react'
 
-import type { AIThread } from './ai-support-data'
+import { checkInStepLabels, type AIThread } from './ai-support-data'
 
 type AIChatSidebarProps = {
   threads: AIThread[]
@@ -39,7 +39,7 @@ export default function AIChatSidebar({
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-900/45">AI Support</p>
-          <h2 className="text-xl font-semibold tracking-tight">Lịch sử chat</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Phien check-in</h2>
         </div>
       </div>
 
@@ -48,7 +48,7 @@ export default function AIChatSidebar({
         className="mt-6 flex h-12 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-medium text-blue-900 transition hover:bg-white/15"
       >
         <MessageSquarePlus className="size-4" />
-        Đoạn chat mới
+        Phien moi
       </button>
 
       <div className="relative mt-5">
@@ -57,7 +57,7 @@ export default function AIChatSidebar({
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Tìm đoạn chat..."
+          placeholder="Tim phien..."
           className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-blue-900 outline-none placeholder:text-blue-900/35"
         />
       </div>
@@ -65,11 +65,11 @@ export default function AIChatSidebar({
       <div className="mt-6 flex-1 overflow-y-auto pr-1">
         {threads.length === 0 ? (
           <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-sm leading-6 text-blue-900/60">
-            Chưa có đoạn chat nào. Khi bạn gửi tin nhắn đầu tiên, lịch sử hội thoại sẽ xuất hiện ở đây.
+            Chua co phien nao. Khi ban bat dau check-in, lich su cac phien se hien o day.
           </div>
         ) : filteredThreads.length === 0 ? (
           <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-sm leading-6 text-blue-900/60">
-            Không tìm thấy đoạn chat phù hợp với từ khóa hiện tại.
+            Khong tim thay phien phu hop voi tu khoa hien tai.
           </div>
         ) : (
           <div className="space-y-3">
@@ -87,9 +87,16 @@ export default function AIChatSidebar({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className={`truncate font-semibold ${isActive ? 'text-blue-900' : 'text-blue-900'}`}>
-                      {thread.title}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-blue-900">{thread.title}</p>
+                      <p
+                        className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                          isActive ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-500'
+                        }`}
+                      >
+                        {checkInStepLabels[thread.stage === 'idle' ? 'emotion' : thread.stage]}
+                      </p>
+                    </div>
                     <span className={`shrink-0 text-xs ${isActive ? 'text-blue-700' : 'text-blue-900/45'}`}>
                       {thread.updatedAt}
                     </span>

@@ -1,18 +1,32 @@
-import { FormEvent, useState } from 'react'
-import { Plus, Send, Smile } from 'lucide-react'
+import { FormEvent, useEffect, useState } from 'react'
+import { LoaderCircle, Send, Sparkles } from 'lucide-react'
 
 type AIChatComposerProps = {
   onSend: (message: string) => void
   placeholder?: string
+  suggestions?: string[]
+  disabled?: boolean
+  isBusy?: boolean
+  multiline?: boolean
 }
 
 export default function AIChatComposer({
   onSend,
-  placeholder = 'Hỏi AI Support bất kỳ điều gì...',
+  placeholder = 'Share what is on your mind...',
+  suggestions = [],
+  disabled = false,
+  isBusy = false,
+  multiline = false,
 }: AIChatComposerProps) {
   const [message, setMessage] = useState('')
 
-  const canSend = message.trim().length > 0
+  useEffect(() => {
+    if (disabled) {
+      setMessage('')
+    }
+  }, [disabled])
+
+  const canSend = !disabled && !isBusy && message.trim().length > 0
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -29,29 +43,47 @@ export default function AIChatComposer({
 
   return (
     <section className="mx-auto w-full max-w-5xl">
+      {suggestions.length > 0 ? (
+        <div className="mb-4 flex flex-wrap gap-3">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              disabled={disabled || isBusy}
+              onClick={() => setMessage(suggestion)}
+              className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-sky-50 hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <form className="flex items-center gap-3" onSubmit={handleSubmit}>
-        <div className="flex min-h-[76px] flex-1 items-center gap-4 rounded-full bg-white px-6 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
-          <button
-            type="button"
-            className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-          >
-            <Plus className="size-5" />
-          </button>
+        <div className="flex min-h-[76px] flex-1 items-center gap-4 rounded-[2rem] bg-white px-6 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
+          <div className="flex size-10 items-center justify-center rounded-full bg-sky-50 text-sky-700">
+            {isBusy ? <LoaderCircle className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
+          </div>
 
-          <input
-            type="text"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder={placeholder}
-            className="flex-1 bg-transparent text-lg text-slate-700 outline-none placeholder:text-slate-400 md:text-xl"
-          />
-
-          <button
-            type="button"
-            className="flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-          >
-            <Smile className="size-5" />
-          </button>
+          {multiline ? (
+            <textarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder={placeholder}
+              disabled={disabled || isBusy}
+              rows={3}
+              className="max-h-36 min-h-[56px] flex-1 resize-none bg-transparent text-lg text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-xl"
+            />
+          ) : (
+            <input
+              type="text"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder={placeholder}
+              disabled={disabled || isBusy}
+              className="flex-1 bg-transparent text-lg text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-xl"
+            />
+          )}
         </div>
 
         <button

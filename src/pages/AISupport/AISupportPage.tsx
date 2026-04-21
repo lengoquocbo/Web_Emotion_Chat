@@ -1,47 +1,119 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MessageSquareText } from 'lucide-react'
 
 import AIChatComposer from '@/components/ai-support/AIChatComposer'
 import AIChatHeader from '@/components/ai-support/AIChatHeader'
 import AIChatSidebar from '@/components/ai-support/AIChatSidebar'
-import AIChatSuggestions from '@/components/ai-support/AIChatSuggestions'
 import AIConversation from '@/components/ai-support/AIConversation'
-import type { AIMessage, AIThread } from '@/components/ai-support/ai-support-data'
+import AICheckInWelcome from '@/components/ai-support/AICheckInWelcome'
+import AIProgressSteps from '@/components/ai-support/AIProgressSteps'
+import AISummaryCard from '@/components/ai-support/AISummaryCard'
+import type {
+  AIMessage,
+  AISummary,
+  AIThread,
+  CheckInStage,
+} from '@/components/ai-support/ai-support-data'
+import {
+  confirmCheckInSummary,
+  rewriteCheckInSummary,
+  startCheckIn,
+  submitCheckInAnswer,
+} from '@/services/aiSupportService'
 
-const STORAGE_KEY = 'ai-support-threads'
-const ACTIVE_THREAD_KEY = 'ai-support-active-thread'
+const STORAGE_KEY = 'ai-support-threads-v2'
+const LEGACY_STORAGE_KEY = 'ai-support-threads'
+const ACTIVE_THREAD_KEY = 'ai-support-active-thread-v2'
 
 const timeFormatter = new Intl.DateTimeFormat('vi-VN', {
   hour: '2-digit',
   minute: '2-digit',
 })
 
-const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-
-const createThreadTitle = (message: string) => {
-  const normalized = message.replace(/\s+/g, ' ').trim()
-  return normalized.length > 40 ? `${normalized.slice(0, 40)}...` : normalized
+const stagePlaceholders: Record<CheckInStage, string> = {
+  idle: '',
+  emotion: 'Mo ta cam xuc hien tai cua ban...',
+  issue: 'Dieu gi dang lam ban nang long nhat luc nay...',
+  deepdive: 'Ke them dieu ban nghi la quan trong nhat...',
+  summary: '',
+  completed: '',
 }
+
+const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 const formatCurrentTime = () => timeFormatter.format(new Date())
 
+const createThreadTitle = (text: string) => {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  return normalized.length > 40 ? `${normalized.slice(0, 40)}...` : normalized
+}
+
+const createAssistantMessage = (text: string): AIMessage => ({
+  id: createId('message'),
+  role: 'assistant',
+  time: formatCurrentTime(),
+  text,
+  kind: 'question',
+})
+
+const createUserMessage = (text: string): AIMessage => ({
+  id: createId('message'),
+  role: 'user',
+  time: formatCurrentTime(),
+  text,
+  kind: 'answer',
+})
+
+const createStatusMessage = (text: string): AIMessage => ({
+  id: createId('message'),
+  role: 'assistant',
+  time: formatCurrentTime(),
+  text,
+  kind: 'status',
+})
+
+const isValidStoredThread = (value: unknown): value is AIThread =>
+  typeof value === 'object' &&
+  value !== null &&
+  'id' in value &&
+  'messages' in value &&
+  'stage' in value
+
 const readStoredThreads = () => {
   if (typeof window === 'undefined') {
-    return []
+    return [] as AIThread[]
   }
 
-  try {
-    const rawThreads = window.localStorage.getItem(STORAGE_KEY)
+  const sources = [STORAGE_KEY, LEGACY_STORAGE_KEY]
 
-    if (!rawThreads) {
+  for (const storageKey of sources) {
+    try {
+      const rawThreads = window.localStorage.getItem(storageKey)
+
+      if (!rawThreads) {
+        continue
+      }
+
+      const parsedThreads = JSON.parse(rawThreads)
+
+      if (!Array.isArray(parsedThreads)) {
+        continue
+      }
+
+      return parsedThreads
+        .filter(isValidStoredThread)
+        .map((thread) => ({
+          ...thread,
+          summary: thread.summary ?? null,
+          answers: thread.answers ?? {},
+          suggestions: thread.suggestions ?? [],
+          canRewrite: thread.canRewrite ?? true,
+        }))
+    } catch {
       return []
     }
-
-    const parsedThreads = JSON.parse(rawThreads)
-    return Array.isArray(parsedThreads) ? (parsedThreads as AIThread[]) : []
-  } catch {
-    return []
   }
+
+  return []
 }
 
 const readStoredActiveThreadId = () => {
@@ -52,27 +124,51 @@ const readStoredActiveThreadId = () => {
   return window.localStorage.getItem(ACTIVE_THREAD_KEY)
 }
 
-const createSupportReply = (message: string): AIMessage => {
-  const summary = message.length > 72 ? `${message.slice(0, 72)}...` : message
+const createDraftThread = (): AIThread => ({
+  id: createId('thread'),
+  title: 'New guided check-in',
+  preview: 'Ready to begin',
+  updatedAt: formatCurrentTime(),
+  stage: 'idle',
+  messages: [],
+  summary: null,
+  answers: {},
+  suggestions: [],
+  canRewrite: false,
+})
 
-  return {
-    id: createId('message'),
-    role: 'assistant',
-    time: formatCurrentTime(),
-    text: `Mình đã nhận được yêu cầu của bạn: "${summary}". Bạn muốn mình hỗ trợ theo hướng lắng nghe, phân tích vấn đề hay gợi ý bước tiếp theo?`,
+const isAnswerStage = (stage: CheckInStage): stage is 'emotion' | 'issue' | 'deepdive' =>
+  stage === 'emotion' || stage === 'issue' || stage === 'deepdive'
+
+const updateThreadCollection = (
+  previousThreads: AIThread[],
+  threadId: string,
+  updater: (thread: AIThread) => AIThread,
+) => {
+  const updatedThreads = previousThreads.map((thread) =>
+    thread.id === threadId ? updater(thread) : thread,
+  )
+
+  const currentThread = updatedThreads.find((thread) => thread.id === threadId)
+
+  if (!currentThread) {
+    return previousThreads
   }
+
+  return [currentThread, ...updatedThreads.filter((thread) => thread.id !== threadId)]
 }
+
+const buildSummaryPreview = (summary: AISummary) => summary.narrative
 
 const AISupportPage = () => {
   const [threads, setThreads] = useState<AIThread[]>(readStoredThreads)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(readStoredActiveThreadId)
+  const [isBusy, setIsBusy] = useState(false)
 
   const activeThread = useMemo(
     () => threads.find((thread) => thread.id === activeThreadId) ?? null,
     [activeThreadId, threads],
   )
-
-  const hasConversation = Boolean(activeThread?.messages.length)
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(threads))
@@ -88,73 +184,191 @@ const AISupportPage = () => {
   }, [activeThreadId])
 
   useEffect(() => {
+    if (threads.length === 0) {
+      const draftThread = createDraftThread()
+      setThreads([draftThread])
+      setActiveThreadId(draftThread.id)
+      return
+    }
+
     if (!activeThreadId) {
+      setActiveThreadId(threads[0]?.id ?? null)
       return
     }
 
     const hasActiveThread = threads.some((thread) => thread.id === activeThreadId)
 
     if (!hasActiveThread) {
-      setActiveThreadId(null)
+      setActiveThreadId(threads[0]?.id ?? null)
     }
   }, [activeThreadId, threads])
 
-  const handleSendMessage = (message: string) => {
-    const content = message.trim()
-
-    if (!content) {
-      return
-    }
-
-    const userMessage: AIMessage = {
-      id: createId('message'),
-      role: 'user',
-      time: formatCurrentTime(),
-      text: content,
-    }
-
-    const assistantMessage = createSupportReply(content)
-
+  const updateActiveThread = (updater: (thread: AIThread) => AIThread) => {
     if (!activeThreadId) {
-      const nextThreadId = createId('thread')
-      const nextThread: AIThread = {
-        id: nextThreadId,
-        title: createThreadTitle(content),
-        preview: content,
-        updatedAt: assistantMessage.time,
-        messages: [userMessage, assistantMessage],
-      }
-
-      setThreads((previousThreads) => [nextThread, ...previousThreads])
-      setActiveThreadId(nextThreadId)
       return
     }
 
-    setThreads((previousThreads) => {
-      const updatedThreads = previousThreads.map((thread) =>
-        thread.id === activeThreadId
-          ? {
-              ...thread,
-              preview: content,
-              updatedAt: assistantMessage.time,
-              messages: [...thread.messages, userMessage, assistantMessage],
-            }
-          : thread,
-      )
-
-      const currentThread = updatedThreads.find((thread) => thread.id === activeThreadId)
-
-      if (!currentThread) {
-        return previousThreads
-      }
-
-      return [currentThread, ...updatedThreads.filter((thread) => thread.id !== activeThreadId)]
-    })
+    setThreads((previousThreads) => updateThreadCollection(previousThreads, activeThreadId, updater))
   }
 
   const handleNewChat = () => {
-    setActiveThreadId(null)
+    const draftThread = createDraftThread()
+    setThreads((previousThreads) => [draftThread, ...previousThreads])
+    setActiveThreadId(draftThread.id)
   }
+
+  const handleStartCheckIn = async () => {
+    if (!activeThread) {
+      return
+    }
+
+    setIsBusy(true)
+
+    try {
+      const response = await startCheckIn()
+      const assistantMessage = createAssistantMessage(response.question)
+
+      updateActiveThread((thread) => ({
+        ...thread,
+        title: 'Check-in session',
+        preview: response.question,
+        updatedAt: assistantMessage.time,
+        stage: response.nextStage,
+        messages: [assistantMessage],
+        suggestions: response.suggestions,
+        summary: null,
+        answers: {},
+        canRewrite: false,
+      }))
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  const handleSendMessage = async (message: string) => {
+    if (!activeThread || !isAnswerStage(activeThread.stage)) {
+      return
+    }
+
+    const currentStage = activeThread.stage
+    const userMessage = createUserMessage(message)
+
+    updateActiveThread((thread) => ({
+      ...thread,
+      title: thread.messages.length === 0 ? createThreadTitle(message) : thread.title,
+      preview: message,
+      updatedAt: userMessage.time,
+      messages: [...thread.messages, userMessage],
+      answers: {
+        ...thread.answers,
+        [currentStage]: message,
+      },
+      suggestions: [],
+    }))
+
+    setIsBusy(true)
+
+    try {
+      const response = await submitCheckInAnswer({
+        stage: currentStage,
+        answers: {
+          ...activeThread.answers,
+          [currentStage]: message,
+        },
+      })
+
+      if (response.summary) {
+        const summary = response.summary
+
+        updateActiveThread((thread) => ({
+          ...thread,
+          stage: response.nextStage,
+          summary,
+          preview: buildSummaryPreview(summary),
+          updatedAt: formatCurrentTime(),
+          suggestions: [],
+          canRewrite: true,
+        }))
+        return
+      }
+
+      if (!response.question) {
+        return
+      }
+
+      const assistantMessage = createAssistantMessage(response.question)
+
+      updateActiveThread((thread) => ({
+        ...thread,
+        stage: response.nextStage,
+        preview: response.question ?? thread.preview,
+        updatedAt: assistantMessage.time,
+        messages: [...thread.messages, assistantMessage],
+        suggestions: response.suggestions,
+      }))
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  const handleRewriteSummary = async () => {
+    if (!activeThread?.summary) {
+      return
+    }
+
+    setIsBusy(true)
+
+    try {
+      const rewrittenSummary = await rewriteCheckInSummary({
+        emotion: activeThread.summary.emotion,
+        issue: activeThread.summary.issue,
+        deepdive: activeThread.summary.deepdive,
+      })
+
+      updateActiveThread((thread) => ({
+        ...thread,
+        summary: rewrittenSummary,
+        preview: buildSummaryPreview(rewrittenSummary),
+        updatedAt: formatCurrentTime(),
+      }))
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  const handleConfirmSummary = async () => {
+    if (!activeThread?.summary) {
+      return
+    }
+
+    setIsBusy(true)
+
+    try {
+      await confirmCheckInSummary()
+      const statusMessage = createStatusMessage(
+        'Summary da duoc xac nhan. Ban co the bat dau mot phien moi bat cu luc nao.',
+      )
+
+      updateActiveThread((thread) => ({
+        ...thread,
+        stage: 'completed',
+        canRewrite: false,
+        preview: 'Completed check-in',
+        updatedAt: statusMessage.time,
+        messages: [...thread.messages, statusMessage],
+      }))
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  if (!activeThread) {
+    return null
+  }
+
+  const hasConversation = activeThread.messages.length > 0
+  const showWelcome = activeThread.stage === 'idle' && !hasConversation
+  const showComposer = isAnswerStage(activeThread.stage)
 
   return (
     <section className="h-full min-h-0 overflow-hidden">
@@ -168,53 +382,46 @@ const AISupportPage = () => {
 
         <div className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] bg-[#f7fbff] p-4 shadow-[0_24px_55px_rgba(15,23,42,0.08)]">
           <header className="shrink-0">
-            <AIChatHeader />
+            <AIChatHeader stage={activeThread.stage} isBusy={isBusy} />
           </header>
 
+          <div className="shrink-0 pt-4">
+            <AIProgressSteps stage={activeThread.stage} />
+          </div>
+
           <main className="min-h-0 flex-1 overflow-hidden pt-4">
-            {hasConversation && activeThread ? (
-              <div className="h-full overflow-y-auto pr-1">
-                <div className="mx-auto max-w-5xl pb-4">
-                  <AIConversation messages={activeThread.messages} />
-                </div>
+            {showWelcome ? (
+              <div className="flex h-full items-center justify-center overflow-y-auto px-4">
+                <AICheckInWelcome isStarting={isBusy} onStart={handleStartCheckIn} />
               </div>
             ) : (
-              <div className="flex h-full items-center justify-center overflow-y-auto px-4">
-                <div className="mx-auto flex w-full max-w-4xl flex-col items-center text-center">
-                  <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-white text-sky-700 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                    <MessageSquareText className="size-7" />
-                  </div>
+              <div className="h-full overflow-y-auto pr-1">
+                <div className="mx-auto max-w-5xl space-y-4 pb-4">
+                  {hasConversation ? <AIConversation messages={activeThread.messages} /> : null}
 
-                  <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-800 md:text-4xl">
-                    {threads.length > 0 ? 'Bắt đầu một đoạn chat mới' : 'AI Support có thể giúp gì cho bạn?'}
-                  </h2>
-
-                  <p className="mt-3 text-base leading-7 text-slate-500 md:text-lg">
-                    {threads.length > 0
-                      ? 'Chọn một cuộc trò chuyện trong lịch sử hoặc gửi yêu cầu mới để mở conversation.'
-                      : 'Khi bạn gửi tin nhắn đầu tiên, conversation sẽ hiện ra và được lưu vào lịch sử ở thanh bên trái.'}
-                  </p>
-
-                  <div className="mt-8">
-                    <AIChatSuggestions onSelect={handleSendMessage} />
-                  </div>
-
-                  <div className="mt-10 w-full">
-                    <AIChatComposer
-                      onSend={handleSendMessage}
-                      placeholder="Mô tả điều bạn đang cần AI Support hỗ trợ..."
+                  {activeThread.summary ? (
+                    <AISummaryCard
+                      summary={activeThread.summary}
+                      isBusy={isBusy}
+                      canRewrite={activeThread.canRewrite}
+                      onConfirm={handleConfirmSummary}
+                      onRewrite={handleRewriteSummary}
                     />
-                  </div>
+                  ) : null}
                 </div>
               </div>
             )}
           </main>
 
-          {hasConversation ? (
+          {showComposer ? (
             <footer className="shrink-0 pt-4">
               <AIChatComposer
                 onSend={handleSendMessage}
-                placeholder="Nhắn tiếp trong cuộc trò chuyện này..."
+                placeholder={stagePlaceholders[activeThread.stage]}
+                suggestions={activeThread.suggestions}
+                disabled={false}
+                isBusy={isBusy}
+                multiline={activeThread.stage === 'deepdive'}
               />
             </footer>
           ) : null}
