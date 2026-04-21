@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { Navigate, Link, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 
 import AuthDivider from '@/components/auth/AuthDivider'
 import AuthShell from '@/components/auth/AuthShell'

@@ -1,6 +1,24 @@
 import { Bell, Settings } from 'lucide-react'
 
-export default function AIChatHeader() {
+import { checkInStepLabels, type CheckInStage } from './ai-support-data'
+
+type AIChatHeaderProps = {
+  stage: CheckInStage
+  isBusy: boolean
+}
+
+const stageDescriptions: Record<CheckInStage, string> = {
+  idle: 'Ready to begin a guided check-in.',
+  emotion: 'Listening for your current emotional state.',
+  issue: 'Clarifying the issue affecting you the most.',
+  deepdive: 'Exploring the layer underneath the immediate issue.',
+  summary: 'Your narrative summary is ready for review.',
+  completed: 'This check-in has been completed.',
+}
+
+export default function AIChatHeader({ stage, isBusy }: AIChatHeaderProps) {
+  const title = stage === 'idle' ? 'Guided Check-in' : checkInStepLabels[stage]
+
   return (
     <header className="rounded-[2rem] bg-white/90 px-6 py-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -11,10 +29,10 @@ export default function AIChatHeader() {
             </div>
           </div>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-800">AI Companion</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-800">{title}</h1>
             <div className="mt-1 flex items-center gap-2 text-sm font-medium uppercase tracking-[0.15em] text-slate-400">
-              <span className="size-2 rounded-full bg-emerald-500" />
-              Online &amp; Listening
+              <span className={`size-2 rounded-full ${isBusy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              {isBusy ? 'Syncing with server' : stageDescriptions[stage]}
             </div>
           </div>
         </div>

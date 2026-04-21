@@ -49,7 +49,7 @@ export default function AIConversation({ messages }: AIConversationProps) {
       <div className="relative z-10 mx-auto max-w-5xl space-y-8">
         <div className="flex justify-center">
           <span className="rounded-full bg-white/70 px-6 py-2 text-sm font-medium text-slate-500 shadow-sm">
-            Cuộc trò chuyện hiện tại
+            Guided check-in session
           </span>
         </div>
 
