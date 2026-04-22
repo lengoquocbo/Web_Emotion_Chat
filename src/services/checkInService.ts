@@ -1,5 +1,5 @@
-// services/checkInService.ts
 import axiosClient from '@/services/axiosClient'
+import { mapAxiosErrorToServiceResult } from '@/services/serviceResult'
 import type {
   CheckInCompletedDto,
   CheckInSessionDto,
@@ -9,32 +9,70 @@ import type {
   StartCheckInRequest,
   SubmitAnswerRequest,
 } from '@/types/checkIn'
+import { ServiceResult } from '@/types/serviceResult'
 
 export const checkInService = {
-  /** POST /api/CheckInSession/start */
-  start: (data: StartCheckInRequest): Promise<CheckInStartResponseDto> =>
-    axiosClient.post('/api/CheckInSession/start', data),
+  start: async (data: StartCheckInRequest): Promise<ServiceResult<CheckInStartResponseDto>> => {
+    try {
+      const response = await axiosClient.post<CheckInStartResponseDto>('/api/CheckInSession/start', data)
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInStartResponseDto>(error, 'Loi khi bat dau session')
+    }
+  },
 
-  /** GET /api/CheckInSession/active */
-  getActive: async (): Promise<CheckInSessionDto | null> => {
-  try {
-    const res = await axiosClient.get<CheckInSessionDto>('/api/CheckInSession/active')
-    return res.data
-  } catch (err: any) {
-    if (err?.response?.status === 404) return null
-    throw err
-  }
-},
+  getActive: async (): Promise<ServiceResult<CheckInSessionDto | null>> => {
+    try {
+      const response = await axiosClient.get<CheckInSessionDto>('/api/CheckInSession/active')
+      return ServiceResult.ok<CheckInSessionDto | null>(response.data, response.status)
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return ServiceResult.ok<CheckInSessionDto | null>(null, 404)
+      }
 
-  /** POST /api/CheckInSession/{sessionId}/answer */
-  submitAnswer: (sessionId: string, data: SubmitAnswerRequest): Promise<CheckInStepResponseDto> =>
-    axiosClient.post(`/api/CheckInSession/${sessionId}/answer`, data),
+      return mapAxiosErrorToServiceResult<CheckInSessionDto | null>(
+        error,
+        'Loi khi lay session active',
+      )
+    }
+  },
 
-  /** POST /api/CheckInSession/{sessionId}/confirm */
-  confirm: (sessionId: string, data: ConfirmCheckInRequest): Promise<CheckInCompletedDto> =>
-    axiosClient.post(`/api/CheckInSession/${sessionId}/confirm`, data),
+  submitAnswer: async (
+    sessionId: string,
+    data: SubmitAnswerRequest,
+  ): Promise<ServiceResult<CheckInStepResponseDto>> => {
+    try {
+      const response = await axiosClient.post<CheckInStepResponseDto>(
+        `/api/CheckInSession/${sessionId}/answer`,
+        data,
+      )
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInStepResponseDto>(error, 'Loi khi gui cau tra loi')
+    }
+  },
 
-  /** POST /api/CheckInSession/{sessionId}/cancel → 204 No Content */
-  cancel: (sessionId: string): Promise<void> =>
-    axiosClient.post(`/api/CheckInSession/${sessionId}/cancel`),
+  confirm: async (
+    sessionId: string,
+    data: ConfirmCheckInRequest,
+  ): Promise<ServiceResult<CheckInCompletedDto>> => {
+    try {
+      const response = await axiosClient.post<CheckInCompletedDto>(
+        `/api/CheckInSession/${sessionId}/confirm`,
+        data,
+      )
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInCompletedDto>(error, 'Loi khi xac nhan session')
+    }
+  },
+
+  cancel: async (sessionId: string): Promise<ServiceResult<null>> => {
+    try {
+      const response = await axiosClient.post(`/api/CheckInSession/${sessionId}/cancel`)
+      return ServiceResult.ok(null, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<null>(error, 'Loi khi huy session')
+    }
+  },
 }
