@@ -1,30 +1,30 @@
-import axiosClient from "./axiosClient";
-import { ApiResponse } from "../types/apiresponse";
-import { AuthResponse, LoginRequest, RegisterRequest, AuthUser } from "../types/auth";
+import axiosClient from './axiosClient'
+import { ApiResponse } from '../types/apiresponse'
+import { AuthResponse, LoginRequest, RegisterRequest, AuthUser } from '../types/auth'
 
 export const LoginService = async (
-  data: LoginRequest
+  data: LoginRequest,
 ): Promise<ApiResponse<AuthResponse>> => {
-  return await axiosClient.post("/api/Auth/login", data);
-};
+  const response = await axiosClient.post<ApiResponse<AuthResponse>>('/api/Auth/login', data)
+  return response.data
+}
 
-// authService.ts
 export const getMeService = async (): Promise<AuthUser> => {
-  // interceptor đã unwrap response.data rồi, cast thẳng
-  const user = await axiosClient.get<AuthUser>("/api/Auth/me");
-  return user as unknown as AuthUser;
-};
+  const response = await axiosClient.get<AuthUser>('/api/Auth/me')
+  return response.data
+}
 
 export const RegisterService = async (
-  data: RegisterRequest
+  data: RegisterRequest,
 ): Promise<ApiResponse<null>> => {
-  return await axiosClient.post("/api/Auth/register", data);
-};
+  const response = await axiosClient.post<ApiResponse<null>>('/api/Auth/register', data)
+  return response.data
+}
 
 export const LogoutService = async (): Promise<void> => {
-  await axiosClient.post("/api/Auth/logout");
-};
+  await axiosClient.post('/api/Auth/logout')
+}
 
 export const getGoogleLoginUrl = (): string => {
-  return "https://localhost:7138/api/Auth/google-login";
-};
+  return 'https://localhost:7138/api/Auth/google-login'
+}
