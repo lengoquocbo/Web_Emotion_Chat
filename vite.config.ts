@@ -9,11 +9,40 @@ export default defineConfig({
       '/api': {
         target: 'https://localhost:7138',
         changeOrigin: true,
-        secure: false // bỏ qua SSL cert tự ký khi dev
+        secure: false,
+        cookieDomainRewrite: {
+          'localhost:7138': 'localhost',
+          '*': 'localhost'
+        },
+        cookiePathRewrite: '/',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie)
+            }
+          })
+        },
+      },
+      '/hubs': {
+        target: 'https://localhost:7138',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        cookieDomainRewrite: {
+          'localhost:7138': 'localhost',
+          '*': 'localhost'
+        },
+        cookiePathRewrite: '/',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie)
+            }
+          })
+        },
       }
     }
   },
-
   plugins: [react()],
   resolve: {
     alias: {

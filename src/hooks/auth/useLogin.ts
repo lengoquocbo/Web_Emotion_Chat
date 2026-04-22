@@ -3,7 +3,7 @@ import axios from "axios";
 
 import { useAuth } from "./useAuth";
 import { isValidPassword, isValidEmail } from "../../utils/validation";
-import { LoginService } from "../../services/authService";
+import { getMeService, LoginService } from "../../services/authService";
 
 export const useLogin = () => {
   const { login } = useAuth();
@@ -15,7 +15,7 @@ export const useLogin = () => {
     setError("");
 
     if (!isValidEmail(email)) {
-      setError("Email không hợp lệ");
+      setError("Email khong hợp lệ");
       setLoading(false);
       return false;
     }
@@ -26,34 +26,23 @@ export const useLogin = () => {
       return false;
     }
 
-    try {
-      // Gọi API đăng nhập
-      const res = await LoginService({
-        emailOrUsername: email,
-        password,
-      });
-     // Kiểm tra dữ liệu trả về có hợp lệ không
-      const authData = res?.data ?? res;
-// Nếu API trả về dữ liệu không đúng định dạng, hiển thị lỗi  
-      if (!authData?.accessToken || !authData?.user) {
-        setError("Dữ liệu đăng nhập trả về không đúng");
-        return false;
-      }
-//
-      login(authData);
-      return true;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Sai email hoặc password");
-      } else {
-        console.error("Login error:", err);
-        setError("Có lỗi xảy ra khi đăng nhập");
-      }
+   try {
+    await LoginService({ emailOrUsername: email, password });
 
-      return false;
-    } finally {
-      setLoading(false);
+    const me = await getMeService();
+    login(me);
+    return true;
+
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      setError(err.response?.data?.message || "Sai email hoặc password");
+    } else {
+      setError("Có lỗi xảy ra khi đăng nhập");
     }
+    return false;
+  } finally {
+    setLoading(false);
+  }
   };
 
   return { handleLogin, error, loading };

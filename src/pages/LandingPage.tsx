@@ -11,13 +11,13 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/auth/useAuth'
 
 export default function LandingPage() {
-  const { token, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
     return <div>Loading...</div>
   }
 
-  if (token) {
+  if (isAuthenticated) {
     return <Navigate to="/home" replace />
   }
 

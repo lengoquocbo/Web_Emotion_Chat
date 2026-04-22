@@ -10,30 +10,21 @@ const GoogleCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-    
-
         const res = await getMeService();
-
-        const token = document.cookie
-          .split("; ")
-          .find(row => row.startsWith("token="))
-          ?.split("=")[1] ?? "";
-
-
-        login({ accessToken: token, user: res, expiresAtUtc: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
-        navigate("/home");
+        login(res);
+        navigate("/home", { replace: true });
       } catch (err) {
-        console.error("Lỗi GoogleCallback:", err);
-        navigate("/login?error=Đăng nhập thất bại");
+        console.error("Lá»—i GoogleCallback:", err);
+        navigate("/login?error=ÄÄƒng nháº­p tháº¥t báº¡i", { replace: true });
       }
     };
 
     handleCallback();
-  }, []);
+  }, [login, navigate]);
 
   return (
     <div style={{ display: "flex", justifyContent: "center", marginTop: "100px" }}>
-      <p>Đang xử lý đăng nhập...</p>
+      <p>Äang xá»­ lÃ½ Ä‘Äƒng nháº­p...</p>
     </div>
   );
 };

@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/auth/useAuth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { token, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const { handleLogin, error, loading } = useLogin()
 
   const [email, setEmail] = useState('')
@@ -30,7 +30,7 @@ export default function LoginPage() {
     return <div>Loading...</div>
   }
 
-  if (token) {
+  if (isAuthenticated) {
     return <Navigate to="/home" replace />
   }
 

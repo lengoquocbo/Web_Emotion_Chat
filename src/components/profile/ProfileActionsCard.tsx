@@ -2,19 +2,22 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/auth/useAuth'
 import { LogoutService } from '@/services/authService'
 
 export default function ProfileActionsCard() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const [loading, setLoading] = useState(false)
 
   const handleLogout = async () => {
     setLoading(true)
     try {
-      await LogoutService() // server xóa cookie
+      await LogoutService()
     } catch {
-      // kể cả lỗi vẫn redirect về login
+      // kÃª cáº£ lá»—i váº«n quay vá» trang login
     } finally {
+      logout()
       setLoading(false)
       navigate('/login', { replace: true })
     }
@@ -44,7 +47,7 @@ export default function ProfileActionsCard() {
           className="mt-5 h-12 w-full rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200"
         >
           <LogOut className="size-4" />
-          {loading ? 'Đang đăng xuất...' : 'Đăng xuất'}
+          {loading ? 'Signing out...' : 'Sign Out'}
         </Button>
       </div>
     </section>

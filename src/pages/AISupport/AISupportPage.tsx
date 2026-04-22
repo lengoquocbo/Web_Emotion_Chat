@@ -371,8 +371,8 @@ const AISupportPage = () => {
   const showComposer = isAnswerStage(activeThread.stage)
 
   return (
-    <section className="h-full min-h-0 overflow-hidden">
-      <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+    <section className="min-h-0 overflow-hidden lg:h-[calc(100vh-1rem)] lg:max-h-[calc(100vh-1rem)]">
+      <div className="grid min-h-0 gap-4 lg:h-full lg:grid-cols-[320px_minmax(0,1fr)]">
         <AIChatSidebar
           threads={threads}
           activeThreadId={activeThreadId}
@@ -391,11 +391,11 @@ const AISupportPage = () => {
 
           <main className="min-h-0 flex-1 overflow-hidden pt-4">
             {showWelcome ? (
-              <div className="flex h-full items-center justify-center overflow-y-auto px-4">
+              <div className="app-scrollbar flex h-full items-center justify-center overflow-y-auto px-4">
                 <AICheckInWelcome isStarting={isBusy} onStart={handleStartCheckIn} />
               </div>
             ) : (
-              <div className="h-full overflow-y-auto pr-1">
+              <div className="app-scrollbar h-full overflow-y-auto pr-1">
                 <div className="mx-auto max-w-5xl space-y-4 pb-4">
                   {hasConversation ? <AIConversation messages={activeThread.messages} /> : null}
 

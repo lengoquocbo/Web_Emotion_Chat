@@ -8,9 +8,11 @@ export const LoginService = async (
   return await axiosClient.post("/api/Auth/login", data);
 };
 
-// Kiểu trả về thực tế là AuthUser, không phải ApiResponse<AuthUser>
+// authService.ts
 export const getMeService = async (): Promise<AuthUser> => {
-  return await axiosClient.get("/api/Auth/me");
+  // interceptor đã unwrap response.data rồi, cast thẳng
+  const user = await axiosClient.get<AuthUser>("/api/Auth/me");
+  return user as unknown as AuthUser;
 };
 
 export const RegisterService = async (
@@ -22,6 +24,7 @@ export const RegisterService = async (
 export const LogoutService = async (): Promise<void> => {
   await axiosClient.post("/api/Auth/logout");
 };
+
 export const getGoogleLoginUrl = (): string => {
   return "https://localhost:7138/api/Auth/google-login";
 };

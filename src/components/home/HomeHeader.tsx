@@ -1,29 +1,11 @@
 import { Bell, Search, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/auth/useAuth'
-import type { AuthUser } from "@/types/auth"
-import { getMeService } from '@/services/authService'   
-import { useEffect, useState } from "react"
+
 
 export default function HomeHeader() {
-  const { user } = useAuth()
-  const [data, setData] = useState<AuthUser | null>(null)
+   const { user } = useAuth()  // đã có từ context rồi, dùng thẳng
 
-  useEffect(() => {
-    const fetchMe = async () => {
-      try {
-      const res = await getMeService()
-      setData(res) 
-    } catch (err) {
-      console.error(err)
-    }
-    }
-
-    fetchMe()
-  }, [])
-
-  const displayName1 = data?.displayName || data?.username
-  const displayName = user?.displayName || user?.username
-  const finalName = displayName1 || displayName || "User"
+  const finalName = user?.displayName || user?.username || "User"
 
 
 

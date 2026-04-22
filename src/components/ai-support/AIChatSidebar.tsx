@@ -62,7 +62,7 @@ export default function AIChatSidebar({
         />
       </div>
 
-      <div className="mt-6 flex-1 overflow-y-auto pr-1">
+      <div className="app-scrollbar mt-6 flex-1 overflow-y-auto pr-1">
         {threads.length === 0 ? (
           <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-sm leading-6 text-blue-900/60">
             Chua co phien nao. Khi ban bat dau check-in, lich su cac phien se hien o day.
