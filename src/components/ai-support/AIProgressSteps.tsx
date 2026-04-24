@@ -9,8 +9,8 @@ export default function AIProgressSteps({ stage }: AIProgressStepsProps) {
   const activeIndex = checkInStepOrder.indexOf(currentStage)
 
   return (
-    <section className="rounded-[2rem] bg-white/90 px-5 py-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
-      <div className="flex flex-wrap gap-3">
+    <section className="rounded-[2rem] bg-white/90 px-4 py-3 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+      <div className="flex flex-wrap gap-2.5">
         {checkInStepOrder.map((step, index) => {
           const isActive = index === activeIndex
           const isComplete = index < activeIndex
@@ -18,7 +18,7 @@ export default function AIProgressSteps({ stage }: AIProgressStepsProps) {
           return (
             <div
               key={step}
-              className={`flex min-w-[120px] flex-1 items-center gap-3 rounded-[1.25rem] px-4 py-3 ${
+              className={`flex min-w-[110px] flex-1 items-center gap-2.5 rounded-[1.25rem] px-3 py-2.5 ${
                 isActive
                   ? 'bg-sky-100 text-sky-900'
                   : isComplete
@@ -27,7 +27,7 @@ export default function AIProgressSteps({ stage }: AIProgressStepsProps) {
               }`}
             >
               <div
-                className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold ${
+                className={`flex size-7 items-center justify-center rounded-full text-xs font-semibold ${
                   isActive
                     ? 'bg-sky-800 text-white'
                     : isComplete
@@ -39,8 +39,8 @@ export default function AIProgressSteps({ stage }: AIProgressStepsProps) {
               </div>
 
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] opacity-60">Step</p>
-                <p className="text-sm font-semibold">{checkInStepLabels[step]}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] opacity-60">Step</p>
+                <p className="text-xs font-semibold md:text-sm">{checkInStepLabels[step]}</p>
               </div>
             </div>
           )
