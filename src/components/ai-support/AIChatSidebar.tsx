@@ -38,17 +38,17 @@ export default function AIChatSidebar({
           <Sparkles className="size-5" />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-900/45">AI Support</p>
-          <h2 className="text-xl font-semibold tracking-tight">Phien check-in</h2>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-900/45">AI Support</p>
+          <h2 className="text-[1.7rem] font-semibold tracking-tight">Phiên check-in</h2>
         </div>
       </div>
 
       <button
         onClick={onNewChat}
-        className="mt-6 flex h-12 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-medium text-blue-900 transition hover:bg-white/15"
+        className="mt-6 flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 text-xs font-medium text-blue-900 transition hover:bg-white/15 md:text-sm"
       >
         <MessageSquarePlus className="size-4" />
-        Phien moi
+        Phiên mới
       </button>
 
       <div className="relative mt-5">
@@ -57,19 +57,19 @@ export default function AIChatSidebar({
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Tim phien..."
-          className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 pl-11 pr-4 text-sm text-blue-900 outline-none placeholder:text-blue-900/35"
+          placeholder="Tìm phiên..."
+          className="h-11 w-full rounded-2xl border border-white/10 bg-white/5 pl-11 pr-4 text-xs text-blue-900 outline-none placeholder:text-blue-900/35 md:text-sm"
         />
       </div>
 
       <div className="app-scrollbar mt-6 flex-1 overflow-y-auto pr-1">
         {threads.length === 0 ? (
-          <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-sm leading-6 text-blue-900/60">
-            Chua co phien nao. Khi ban bat dau check-in, lich su cac phien se hien o day.
+          <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-xs leading-6 text-blue-900/60 md:text-sm">
+            Chưa có phiên check-in nào. Lịch sử các phiên check in sẽ được hiển thị ở đây.
           </div>
         ) : filteredThreads.length === 0 ? (
-          <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-sm leading-6 text-blue-900/60">
-            Khong tim thay phien phu hop voi tu khoa hien tai.
+          <div className="rounded-[1.5rem] border border-dashed border-white/15 bg-white/5 px-4 py-5 text-xs leading-6 text-blue-900/60 md:text-sm">
+            Không tìm thấy phiên phù hợp với từ khóa hiện tại.
           </div>
         ) : (
           <div className="space-y-3">
@@ -88,20 +88,20 @@ export default function AIChatSidebar({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold text-blue-900">{thread.title}</p>
+                      <p className="truncate text-base font-semibold text-blue-900">{thread.title}</p>
                       <p
-                        className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                        className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-medium ${
                           isActive ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-500'
                         }`}
                       >
                         {checkInStepLabels[thread.stage === 'idle' ? 'emotion' : thread.stage]}
                       </p>
                     </div>
-                    <span className={`shrink-0 text-xs ${isActive ? 'text-blue-700' : 'text-blue-900/45'}`}>
+                    <span className={`shrink-0 text-[11px] ${isActive ? 'text-blue-700' : 'text-blue-900/45'}`}>
                       {thread.updatedAt}
                     </span>
                   </div>
-                  <p className={`mt-2 truncate text-sm ${isActive ? 'text-blue-800' : 'text-blue-900/60'}`}>
+                  <p className={`mt-2 truncate text-xs ${isActive ? 'text-blue-800' : 'text-blue-900/60'} md:text-sm`}>
                     {thread.preview}
                   </p>
                 </button>

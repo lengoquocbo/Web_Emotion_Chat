@@ -10,19 +10,12 @@ import AISummaryCard from '@/components/ai-support/AISummaryCard'
 import type {
   AIMessage,
   AISummary,
-  AIThread,
   CheckInStage,
 } from '@/components/ai-support/ai-support-data'
-import {
-  confirmCheckInSummary,
-  rewriteCheckInSummary,
-  startCheckIn,
-  submitCheckInAnswer,
-} from '@/services/aiSupportService'
+import { useCheckIn } from '@/hooks/chat/useCheckIn'
+import { CheckInStatus, CheckInStep, type CheckInSessionDto } from '@/types/checkIn'
 
-const STORAGE_KEY = 'ai-support-threads-v2'
-const LEGACY_STORAGE_KEY = 'ai-support-threads'
-const ACTIVE_THREAD_KEY = 'ai-support-active-thread-v2'
+const DRAFT_THREAD_ID = 'draft-check-in'
 
 const timeFormatter = new Intl.DateTimeFormat('vi-VN', {
   hour: '2-digit',
@@ -42,27 +35,6 @@ const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().to
 
 const formatCurrentTime = () => timeFormatter.format(new Date())
 
-const createThreadTitle = (text: string) => {
-  const normalized = text.replace(/\s+/g, ' ').trim()
-  return normalized.length > 40 ? `${normalized.slice(0, 40)}...` : normalized
-}
-
-const createAssistantMessage = (text: string): AIMessage => ({
-  id: createId('message'),
-  role: 'assistant',
-  time: formatCurrentTime(),
-  text,
-  kind: 'question',
-})
-
-const createUserMessage = (text: string): AIMessage => ({
-  id: createId('message'),
-  role: 'user',
-  time: formatCurrentTime(),
-  text,
-  kind: 'answer',
-})
-
 const createStatusMessage = (text: string): AIMessage => ({
   id: createId('message'),
   role: 'assistant',
@@ -71,342 +43,465 @@ const createStatusMessage = (text: string): AIMessage => ({
   kind: 'status',
 })
 
-const isValidStoredThread = (value: unknown): value is AIThread =>
-  typeof value === 'object' &&
-  value !== null &&
-  'id' in value &&
-  'messages' in value &&
-  'stage' in value
-
-const readStoredThreads = () => {
-  if (typeof window === 'undefined') {
-    return [] as AIThread[]
+const mapStepToStage = (
+  step: CheckInStep | null | undefined,
+  status: CheckInStatus | null | undefined,
+): CheckInStage => {
+  if (status === CheckInStatus.Completed || step === CheckInStep.Completed) {
+    return 'completed'
   }
 
-  const sources = [STORAGE_KEY, LEGACY_STORAGE_KEY]
-
-  for (const storageKey of sources) {
-    try {
-      const rawThreads = window.localStorage.getItem(storageKey)
-
-      if (!rawThreads) {
-        continue
-      }
-
-      const parsedThreads = JSON.parse(rawThreads)
-
-      if (!Array.isArray(parsedThreads)) {
-        continue
-      }
-
-      return parsedThreads
-        .filter(isValidStoredThread)
-        .map((thread) => ({
-          ...thread,
-          summary: thread.summary ?? null,
-          answers: thread.answers ?? {},
-          suggestions: thread.suggestions ?? [],
-          canRewrite: thread.canRewrite ?? true,
-        }))
-    } catch {
-      return []
-    }
+  if (
+    status === CheckInStatus.AwaitingConfirmation ||
+    step === CheckInStep.AwaitingConfirmation ||
+    step === CheckInStep.SummaryGenerated
+  ) {
+    return 'summary'
   }
 
-  return []
+  if (step === CheckInStep.Step1Emotion) {
+    return 'emotion'
+  }
+
+  if (step === CheckInStep.Step2MainIssue) {
+    return 'issue'
+  }
+
+  if (step === CheckInStep.Step3DeepDive) {
+    return 'deepdive'
+  }
+
+  return 'idle'
 }
 
-const readStoredActiveThreadId = () => {
-  if (typeof window === 'undefined') {
+const mapSummaryToCard = (summary: string | null | undefined): AISummary | null => {
+  if (!summary) {
     return null
   }
 
-  return window.localStorage.getItem(ACTIVE_THREAD_KEY)
+  return {
+    emotion: 'Captured in summary',
+    issue: 'Captured in summary',
+    deepdive: 'Captured in summary',
+    narrative: summary,
+  }
 }
 
-const createDraftThread = (): AIThread => ({
-  id: createId('thread'),
-  title: 'New guided check-in',
-  preview: 'Ready to begin',
-  updatedAt: formatCurrentTime(),
-  stage: 'idle',
-  messages: [],
-  summary: null,
-  answers: {},
-  suggestions: [],
-  canRewrite: false,
-})
+const formatSessionTimestamp = (session: CheckInSessionDto) => {
+  const rawValue = session.updatedAt ?? session.completedAt ?? session.createdAt
+
+  if (!rawValue) {
+    return formatCurrentTime()
+  }
+
+  const date = new Date(rawValue)
+
+  if (Number.isNaN(date.getTime())) {
+    return rawValue
+  }
+
+  return timeFormatter.format(date)
+}
+
+const getSafeSessionId = (session: CheckInSessionDto) => {
+  const rawValue = session.sessionId ?? session.id
+
+  if (typeof rawValue === 'string' && rawValue.trim().length > 0) {
+    return rawValue
+  }
+
+  const fallbackSource =
+    session.createdAt ??
+    session.updatedAt ??
+    session.completedAt ??
+    session.cancelledAt ??
+    session.currentStep ??
+    'unknown'
+
+  return `unknown-session-${String(fallbackSource).replace(/\s+/g, '-').toLowerCase()}`
+}
+
+const buildSessionTitle = (session: CheckInSessionDto) => {
+  const summary = session.confirmedSummary ?? session.editedSummary ?? session.generatedSummary
+
+  if (typeof summary === 'string' && summary.trim().length > 0) {
+    return summary.length > 40 ? `${summary.slice(0, 40)}...` : summary
+  }
+
+  return `Check-in mới`
+}
+
+const buildSessionPreview = (session: CheckInSessionDto) => {
+  if (typeof session.confirmedSummary === 'string' && session.confirmedSummary.trim().length > 0) {
+    return session.confirmedSummary
+  }
+
+  if (typeof session.editedSummary === 'string' && session.editedSummary.trim().length > 0) {
+    return session.editedSummary
+  }
+
+  if (typeof session.generatedSummary === 'string' && session.generatedSummary.trim().length > 0) {
+    return session.generatedSummary
+  }
+
+  if (typeof session.currentQuestion === 'string' && session.currentQuestion.trim().length > 0) {
+    return session.currentQuestion
+  }
+
+  return session.currentStep ?? 'Session in progress'
+}
+
+const buildMessagesFromSession = (session: CheckInSessionDto | null): AIMessage[] => {
+  if (!session) {
+    return []
+  }
+
+  const messages: AIMessage[] = []
+  const timeLabel = formatSessionTimestamp(session)
+  let index = 0
+
+  const pushAssistant = (text?: string | null) => {
+    if (!text || !text.trim()) return
+    messages.push({
+      id: `assistant-${index++}`,
+      role: 'assistant',
+      time: timeLabel,
+      text,
+      kind: 'question',
+    })
+  }
+
+  const pushUser = (text?: string | null) => {
+    if (!text || !text.trim()) return
+    messages.push({
+      id: `user-${index++}`,
+      role: 'user',
+      time: timeLabel,
+      text,
+      kind: 'answer',
+    })
+  }
+
+  pushAssistant(session.emotionQuestion)
+  pushUser(session.emotionAnswer)
+  pushAssistant(session.issueQuestion)
+  pushUser(session.issueAnswer)
+  pushAssistant(session.deepDiveQuestion)
+  pushUser(session.deepDiveAnswer)
+
+  const currentQuestion = session.currentQuestion?.trim()
+  const lastAssistantBeforeCurrent = [...messages]
+    .reverse()
+    .find((message) => message.role === 'assistant')?.text
+
+  if (currentQuestion && currentQuestion !== lastAssistantBeforeCurrent) {
+    pushAssistant(currentQuestion)
+  }
+
+  const lastAssistantAfterCurrent = [...messages]
+    .reverse()
+    .find((message) => message.role === 'assistant')?.text
+
+  if (
+    session.reviewQuestion &&
+    session.currentStep === CheckInStep.AwaitingConfirmation &&
+    session.reviewQuestion !== lastAssistantAfterCurrent
+  ) {
+    pushAssistant(session.reviewQuestion)
+  }
+
+  return messages
+}
 
 const isAnswerStage = (stage: CheckInStage): stage is 'emotion' | 'issue' | 'deepdive' =>
   stage === 'emotion' || stage === 'issue' || stage === 'deepdive'
 
-const updateThreadCollection = (
-  previousThreads: AIThread[],
-  threadId: string,
-  updater: (thread: AIThread) => AIThread,
-) => {
-  const updatedThreads = previousThreads.map((thread) =>
-    thread.id === threadId ? updater(thread) : thread,
-  )
-
-  const currentThread = updatedThreads.find((thread) => thread.id === threadId)
-
-  if (!currentThread) {
-    return previousThreads
-  }
-
-  return [currentThread, ...updatedThreads.filter((thread) => thread.id !== threadId)]
-}
-
-const buildSummaryPreview = (summary: AISummary) => summary.narrative
-
 const AISupportPage = () => {
-  const [threads, setThreads] = useState<AIThread[]>(readStoredThreads)
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(readStoredActiveThreadId)
-  const [isBusy, setIsBusy] = useState(false)
+  const {
+    sessionId,
+    generatedSummary,
+    status,
+    currentStep,
+    result,
+    activeSession,
+    loading,
+    error,
+    start,
+    submitAnswer,
+    rewriteSummary,
+    confirm,
+    reset,
+    loadSessionById,
+    loadSessions,
+    sessions,
+  } = useCheckIn()
 
-  const activeThread = useMemo(
-    () => threads.find((thread) => thread.id === activeThreadId) ?? null,
-    [activeThreadId, threads],
+  const [activeThreadId, setActiveThreadId] = useState<string>(DRAFT_THREAD_ID)
+  const [editedSummary, setEditedSummary] = useState<string | null>(null)
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      await loadSessions()
+    }
+
+    void bootstrap()
+  }, [])
+
+  useEffect(() => {
+    if (activeSession) {
+      setActiveThreadId(getSafeSessionId(activeSession))
+    }
+  }, [activeSession])
+
+  useEffect(() => {
+    if (activeThreadId === DRAFT_THREAD_ID) {
+      setEditedSummary(null)
+      return
+    }
+
+    setEditedSummary(activeSession?.editedSummary ?? null)
+  }, [activeSession, activeThreadId])
+
+  const threads = useMemo(
+    () =>
+      sessions.map((session) => ({
+        id: getSafeSessionId(session),
+        title: buildSessionTitle(session),
+        preview: buildSessionPreview(session),
+        updatedAt: formatSessionTimestamp(session),
+        stage: mapStepToStage(session.currentStep, session.status),
+        messages: [],
+        summary: mapSummaryToCard(
+          session.confirmedSummary ?? session.editedSummary ?? session.generatedSummary,
+        ),
+        answers: {},
+        suggestions: [],
+        canRewrite: session.status === CheckInStatus.AwaitingConfirmation,
+      })),
+    [sessions],
   )
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(threads))
-  }, [threads])
+  const selectedSession = useMemo(() => {
+    if (activeThreadId === DRAFT_THREAD_ID) {
+      return null
+    }
 
-  useEffect(() => {
-    if (!activeThreadId) {
-      window.localStorage.removeItem(ACTIVE_THREAD_KEY)
+    if (activeSession && getSafeSessionId(activeSession) === activeThreadId) {
+      return activeSession
+    }
+
+    return sessions.find((session) => getSafeSessionId(session) === activeThreadId) ?? null
+  }, [activeSession, activeThreadId, sessions])
+
+  const currentStage =
+    activeThreadId === DRAFT_THREAD_ID
+      ? 'idle'
+      : selectedSession
+        ? mapStepToStage(selectedSession.currentStep, selectedSession.status)
+        : mapStepToStage(currentStep, status)
+
+  const originalSummary = selectedSession
+    ? mapSummaryToCard(selectedSession.generatedSummary ?? generatedSummary)
+    : null
+
+  const rewrittenSummary = selectedSession
+    ? mapSummaryToCard(editedSummary ?? selectedSession.editedSummary)
+    : null
+
+  const confirmedSummary = selectedSession
+    ? mapSummaryToCard(selectedSession.confirmedSummary ?? result?.confirmedSummary)
+    : null
+
+  const currentSummary = confirmedSummary ?? rewrittenSummary ?? originalSummary
+
+  const currentMessages = useMemo(() => buildMessagesFromSession(selectedSession), [selectedSession])
+  const hasConversation = currentMessages.length > 0
+  const showWelcome = activeThreadId === DRAFT_THREAD_ID
+  const activeSessionKey = activeSession ? getSafeSessionId(activeSession) : sessionId
+  const showComposer =
+    activeSessionKey === activeThreadId &&
+    selectedSession?.status !== CheckInStatus.Completed &&
+    isAnswerStage(currentStage)
+  const isWaitingForSummary =
+    loading &&
+    activeSessionKey === activeThreadId &&
+    currentStage === 'deepdive' &&
+    !currentSummary
+
+  const handleRefreshSessions = async () => {
+    const sessionList = await loadSessions()
+
+    if (!sessionList || !activeThreadId || activeThreadId === DRAFT_THREAD_ID) {
       return
     }
 
-    window.localStorage.setItem(ACTIVE_THREAD_KEY, activeThreadId)
-  }, [activeThreadId])
+    const targetSession = sessionList.find((session) => getSafeSessionId(session) === activeThreadId)
 
-  useEffect(() => {
-    if (threads.length === 0) {
-      const draftThread = createDraftThread()
-      setThreads([draftThread])
-      setActiveThreadId(draftThread.id)
-      return
+    if (targetSession) {
+      await loadSessionById(getSafeSessionId(targetSession))
     }
-
-    if (!activeThreadId) {
-      setActiveThreadId(threads[0]?.id ?? null)
-      return
-    }
-
-    const hasActiveThread = threads.some((thread) => thread.id === activeThreadId)
-
-    if (!hasActiveThread) {
-      setActiveThreadId(threads[0]?.id ?? null)
-    }
-  }, [activeThreadId, threads])
-
-  const updateActiveThread = (updater: (thread: AIThread) => AIThread) => {
-    if (!activeThreadId) {
-      return
-    }
-
-    setThreads((previousThreads) => updateThreadCollection(previousThreads, activeThreadId, updater))
   }
 
   const handleNewChat = () => {
-    const draftThread = createDraftThread()
-    setThreads((previousThreads) => [draftThread, ...previousThreads])
-    setActiveThreadId(draftThread.id)
+    reset()
+    setEditedSummary(null)
+    setActiveThreadId(DRAFT_THREAD_ID)
   }
 
   const handleStartCheckIn = async () => {
-    if (!activeThread) {
+    setEditedSummary(null)
+
+    const response = await start('Text')
+
+    if (!response) {
       return
     }
 
-    setIsBusy(true)
-
-    try {
-      const response = await startCheckIn()
-      const assistantMessage = createAssistantMessage(response.question)
-
-      updateActiveThread((thread) => ({
-        ...thread,
-        title: 'Check-in session',
-        preview: response.question,
-        updatedAt: assistantMessage.time,
-        stage: response.nextStage,
-        messages: [assistantMessage],
-        suggestions: response.suggestions,
-        summary: null,
-        answers: {},
-        canRewrite: false,
-      }))
-    } finally {
-      setIsBusy(false)
-    }
+    setActiveThreadId(response.sessionId)
+    await loadSessions()
+    await loadSessionById(response.sessionId)
   }
 
   const handleSendMessage = async (message: string) => {
-    if (!activeThread || !isAnswerStage(activeThread.stage)) {
+    if (!activeSessionKey || activeThreadId !== activeSessionKey) {
       return
     }
 
-    const currentStage = activeThread.stage
-    const userMessage = createUserMessage(message)
+    const response = await submitAnswer(message)
 
-    updateActiveThread((thread) => ({
-      ...thread,
-      title: thread.messages.length === 0 ? createThreadTitle(message) : thread.title,
-      preview: message,
-      updatedAt: userMessage.time,
-      messages: [...thread.messages, userMessage],
-      answers: {
-        ...thread.answers,
-        [currentStage]: message,
-      },
-      suggestions: [],
-    }))
-
-    setIsBusy(true)
-
-    try {
-      const response = await submitCheckInAnswer({
-        stage: currentStage,
-        answers: {
-          ...activeThread.answers,
-          [currentStage]: message,
-        },
-      })
-
-      if (response.summary) {
-        const summary = response.summary
-
-        updateActiveThread((thread) => ({
-          ...thread,
-          stage: response.nextStage,
-          summary,
-          preview: buildSummaryPreview(summary),
-          updatedAt: formatCurrentTime(),
-          suggestions: [],
-          canRewrite: true,
-        }))
-        return
-      }
-
-      if (!response.question) {
-        return
-      }
-
-      const assistantMessage = createAssistantMessage(response.question)
-
-      updateActiveThread((thread) => ({
-        ...thread,
-        stage: response.nextStage,
-        preview: response.question ?? thread.preview,
-        updatedAt: assistantMessage.time,
-        messages: [...thread.messages, assistantMessage],
-        suggestions: response.suggestions,
-      }))
-    } finally {
-      setIsBusy(false)
+    if (!response) {
+      return
     }
+
+    if (response.summary) {
+      setEditedSummary(null)
+    }
+
+    await handleRefreshSessions()
   }
 
-  const handleRewriteSummary = async () => {
-    if (!activeThread?.summary) {
+  const handleSelectThread = async (threadId: string) => {
+    setActiveThreadId(threadId)
+
+    if (threadId === DRAFT_THREAD_ID) {
+      reset()
+      setEditedSummary(null)
       return
     }
 
-    setIsBusy(true)
+    await loadSessionById(threadId)
+  }
 
-    try {
-      const rewrittenSummary = await rewriteCheckInSummary({
-        emotion: activeThread.summary.emotion,
-        issue: activeThread.summary.issue,
-        deepdive: activeThread.summary.deepdive,
-      })
+  const handleRewriteSummary = () => {
+    const sourceSummary = editedSummary ?? generatedSummary
 
-      updateActiveThread((thread) => ({
-        ...thread,
-        summary: rewrittenSummary,
-        preview: buildSummaryPreview(rewrittenSummary),
-        updatedAt: formatCurrentTime(),
-      }))
-    } finally {
-      setIsBusy(false)
+    if (!sourceSummary) {
+      return
     }
+
+    void (async () => {
+      const response = await rewriteSummary(sourceSummary)
+
+      if (!response) {
+        return
+      }
+
+      setEditedSummary(response.rewrittenText)
+    })()
   }
 
   const handleConfirmSummary = async () => {
-    if (!activeThread?.summary) {
+    const response = await confirm(editedSummary ?? generatedSummary ?? undefined)
+
+    if (!response) {
       return
     }
 
-    setIsBusy(true)
-
-    try {
-      await confirmCheckInSummary()
-      const statusMessage = createStatusMessage(
-        'Summary da duoc xac nhan. Ban co the bat dau mot phien moi bat cu luc nao.',
-      )
-
-      updateActiveThread((thread) => ({
-        ...thread,
-        stage: 'completed',
-        canRewrite: false,
-        preview: 'Completed check-in',
-        updatedAt: statusMessage.time,
-        messages: [...thread.messages, statusMessage],
-      }))
-    } finally {
-      setIsBusy(false)
-    }
+    setEditedSummary(response.confirmedSummary)
+    await handleRefreshSessions()
   }
-
-  if (!activeThread) {
-    return null
-  }
-
-  const hasConversation = activeThread.messages.length > 0
-  const showWelcome = activeThread.stage === 'idle' && !hasConversation
-  const showComposer = isAnswerStage(activeThread.stage)
 
   return (
     <section className="min-h-0 overflow-hidden lg:h-[calc(100vh-1rem)] lg:max-h-[calc(100vh-1rem)]">
-      <div className="grid min-h-0 gap-4 lg:h-full lg:grid-cols-[320px_minmax(0,1fr)]">
-        <AIChatSidebar
-          threads={threads}
-          activeThreadId={activeThreadId}
-          onNewChat={handleNewChat}
-          onSelectThread={setActiveThreadId}
-        />
-
+      <div className="grid min-h-0 gap-4 lg:h-full lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] bg-[#f7fbff] p-4 shadow-[0_24px_55px_rgba(15,23,42,0.08)]">
           <header className="shrink-0">
-            <AIChatHeader stage={activeThread.stage} isBusy={isBusy} />
+            <AIChatHeader stage={currentStage} isBusy={loading} />
           </header>
 
           <div className="shrink-0 pt-4">
-            <AIProgressSteps stage={activeThread.stage} />
+            <AIProgressSteps stage={currentStage} />
           </div>
 
           <main className="min-h-0 flex-1 overflow-hidden pt-4">
             {showWelcome ? (
               <div className="app-scrollbar flex h-full items-center justify-center overflow-y-auto px-4">
-                <AICheckInWelcome isStarting={isBusy} onStart={handleStartCheckIn} />
+                <AICheckInWelcome isStarting={loading} onStart={handleStartCheckIn} />
               </div>
             ) : (
               <div className="app-scrollbar h-full overflow-y-auto pr-1">
                 <div className="mx-auto max-w-5xl space-y-4 pb-4">
-                  {hasConversation ? <AIConversation messages={activeThread.messages} /> : null}
+                  {error ? (
+                    <div className="rounded-[1.5rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
 
-                  {activeThread.summary ? (
+                  {hasConversation ? <AIConversation messages={currentMessages} /> : null}
+
+                  {isWaitingForSummary ? (
+                    <div className="rounded-[2rem] border border-sky-100 bg-white px-6 py-5 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
+                        Summary in progress
+                      </p>
+                      <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+                        Hệ thống tổng hợp nội dung từ câu trả lời của bạn và đưa ra tổng kết.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {currentSummary ? (
                     <AISummaryCard
-                      summary={activeThread.summary}
-                      isBusy={isBusy}
-                      canRewrite={activeThread.canRewrite}
+                      summary={currentSummary}
+                      originalSummary={originalSummary}
+                      rewrittenSummary={rewrittenSummary}
+                      isBusy={loading}
+                      canRewrite={
+                        activeSessionKey === activeThreadId &&
+                        selectedSession?.status === CheckInStatus.AwaitingConfirmation
+                      }
+                      showActions={selectedSession?.status !== CheckInStatus.Completed}
                       onConfirm={handleConfirmSummary}
                       onRewrite={handleRewriteSummary}
                     />
+                  ) : null}
+
+                  {!hasConversation && !currentSummary && selectedSession ? (
+                    <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Session Snapshot
+                      </p>
+                      <p className="mt-3 text-base leading-7">
+                        Session này đang ở trạng thái <span className="font-semibold">{selectedSession.status}</span>{' '}
+                        tai buoc <span className="font-semibold">{selectedSession.currentStep}</span>.
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {result ? (
+                    <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Session Completed
+                      </p>
+                      <p className="mt-3 text-base leading-7">
+                        Summary đã được xác nhận.
+                      </p>
+                      <div className="mt-4">
+                        <div className="rounded-[1.5rem] bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                          {createStatusMessage('Summary đã được xác nhận.').text}
+                        </div>
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               </div>
@@ -417,15 +512,24 @@ const AISupportPage = () => {
             <footer className="shrink-0 pt-4">
               <AIChatComposer
                 onSend={handleSendMessage}
-                placeholder={stagePlaceholders[activeThread.stage]}
-                suggestions={activeThread.suggestions}
+                placeholder={stagePlaceholders[currentStage]}
+                suggestions={[]}
                 disabled={false}
-                isBusy={isBusy}
-                multiline={activeThread.stage === 'deepdive'}
+                isBusy={loading}
+                multiline={currentStage === 'deepdive'}
               />
             </footer>
           ) : null}
         </div>
+
+        <AIChatSidebar
+          threads={threads}
+          activeThreadId={activeThreadId}
+          onNewChat={handleNewChat}
+          onSelectThread={(threadId) => {
+            void handleSelectThread(threadId)
+          }}
+        />
       </div>
     </section>
   )

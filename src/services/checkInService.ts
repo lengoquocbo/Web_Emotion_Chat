@@ -6,8 +6,10 @@ import type {
   CheckInStartResponseDto,
   CheckInStepResponseDto,
   ConfirmCheckInRequest,
+  RewriteSummaryRequestDto,
+  RewriteSummaryResponseDto,
   StartCheckInRequest,
-  SubmitAnswerRequest,
+  SubmitCheckInAnswerRequest,
 } from '@/types/checkIn'
 import { ServiceResult } from '@/types/serviceResult'
 
@@ -25,21 +27,14 @@ export const checkInService = {
     try {
       const response = await axiosClient.get<CheckInSessionDto>('/api/CheckInSession/active')
       return ServiceResult.ok<CheckInSessionDto | null>(response.data, response.status)
-    } catch (error: any) {
-      if (error?.response?.status === 404) {
-        return ServiceResult.ok<CheckInSessionDto | null>(null, 404)
-      }
-
-      return mapAxiosErrorToServiceResult<CheckInSessionDto | null>(
-        error,
-        'Loi khi lay session active',
-      )
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInSessionDto | null>(error, "Error when try to get session active")
     }
   },
 
   submitAnswer: async (
     sessionId: string,
-    data: SubmitAnswerRequest,
+    data: SubmitCheckInAnswerRequest,
   ): Promise<ServiceResult<CheckInStepResponseDto>> => {
     try {
       const response = await axiosClient.post<CheckInStepResponseDto>(
@@ -49,6 +44,15 @@ export const checkInService = {
       return ServiceResult.ok(response.data, response.status)
     } catch (error) {
       return mapAxiosErrorToServiceResult<CheckInStepResponseDto>(error, 'Loi khi gui cau tra loi')
+    }
+  },
+
+  getMySessions : async () : Promise<ServiceResult<CheckInSessionDto[]>> => {
+    try {
+      const result = await axiosClient.get<CheckInSessionDto[]>('api/CheckInSession/my-sessions')
+      return ServiceResult.ok(result.data, result.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInSessionDto[]>(error, 'Lỗi khi lấy ra danh sách session')
     }
   },
 
@@ -64,6 +68,24 @@ export const checkInService = {
       return ServiceResult.ok(response.data, response.status)
     } catch (error) {
       return mapAxiosErrorToServiceResult<CheckInCompletedDto>(error, 'Loi khi xac nhan session')
+    }
+  },
+
+  rewrite : async (request : RewriteSummaryRequestDto) : Promise<ServiceResult<RewriteSummaryResponseDto>> => {
+    try {
+      const response = await axiosClient.post<RewriteSummaryResponseDto>('/api/CheckInSession/rewrite-summary', request)
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult(error, "Lỗi khi cố gắng rewrite summary")
+    }
+  },
+
+  getSessionById : async (sessionId : string) : Promise<ServiceResult<CheckInSessionDto>> => {
+    try {
+      const response = await axiosClient.get(`/api/CheckInSession/${sessionId}`)
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInSessionDto>(error, 'Lỗi khi lấy ra sesion')
     }
   },
 

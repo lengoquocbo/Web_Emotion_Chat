@@ -51,7 +51,7 @@ export default function AIChatComposer({
               type="button"
               disabled={disabled || isBusy}
               onClick={() => setMessage(suggestion)}
-              className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-sky-50 hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-white px-4 py-2 text-xs font-medium text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:bg-sky-50 hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             >
               {suggestion}
             </button>
@@ -60,7 +60,7 @@ export default function AIChatComposer({
       ) : null}
 
       <form className="flex items-center gap-3" onSubmit={handleSubmit}>
-        <div className="flex min-h-[76px] flex-1 items-center gap-4 rounded-[2rem] bg-white px-6 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
+        <div className="flex min-h-[68px] flex-1 items-center gap-4 rounded-[2rem] bg-white px-6 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
           <div className="flex size-10 items-center justify-center rounded-full bg-sky-50 text-sky-700">
             {isBusy ? <LoaderCircle className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
           </div>
@@ -72,7 +72,7 @@ export default function AIChatComposer({
               placeholder={placeholder}
               disabled={disabled || isBusy}
               rows={3}
-              className="max-h-36 min-h-[56px] flex-1 resize-none bg-transparent text-lg text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-xl"
+              className="max-h-36 min-h-[52px] flex-1 resize-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-base"
             />
           ) : (
             <input
@@ -81,7 +81,7 @@ export default function AIChatComposer({
               onChange={(event) => setMessage(event.target.value)}
               placeholder={placeholder}
               disabled={disabled || isBusy}
-              className="flex-1 bg-transparent text-lg text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-xl"
+              className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed md:text-base"
             />
           )}
         </div>
@@ -89,13 +89,13 @@ export default function AIChatComposer({
         <button
           type="submit"
           disabled={!canSend}
-          className={`flex size-[72px] items-center justify-center rounded-full text-white shadow-[0_18px_40px_rgba(3,105,161,0.28)] transition ${
+          className={`flex size-[64px] items-center justify-center rounded-full text-white shadow-[0_18px_40px_rgba(3,105,161,0.28)] transition ${
             canSend
               ? 'bg-sky-800 hover:-translate-y-1 hover:bg-sky-900'
               : 'cursor-not-allowed bg-slate-300 shadow-none'
           }`}
         >
-          <Send className="size-7 fill-current" />
+          <Send className="size-6 fill-current" />
         </button>
       </form>
     </section>
