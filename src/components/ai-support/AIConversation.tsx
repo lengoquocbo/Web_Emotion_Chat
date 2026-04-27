@@ -42,7 +42,7 @@ export default function AIConversation({ messages }: AIConversationProps) {
   }, [messages])
 
   return (
-    <section className="relative overflow-hidden rounded-[2.25rem] bg-[linear-gradient(180deg,#eef6ff_0%,#f7fbff_30%,#fcfdff_100%)] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+    <section className="relative overflow-hidden rounded-[2.25rem]  px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.55),transparent_60%)]" />
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-white/70 blur-3xl" />
 

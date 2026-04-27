@@ -29,8 +29,8 @@ export default function AIChatHeader({ stage, isBusy }: AIChatHeaderProps) {
             </div>
           </div>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-800">{title}</h1>
-            <div className="mt-1 flex items-center gap-2 text-sm font-medium uppercase tracking-[0.15em] text-slate-400">
+            <h1 className="text-[2rem] font-semibold tracking-tight text-slate-800 md:text-[2.15rem]">{title}</h1>
+            <div className="mt-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.15em] text-slate-400 md:text-xs">
               <span className={`size-2 rounded-full ${isBusy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
               {isBusy ? 'Syncing with server' : stageDescriptions[stage]}
             </div>
@@ -45,7 +45,7 @@ export default function AIChatHeader({ stage, isBusy }: AIChatHeaderProps) {
             <Settings className="size-4" />
           </button>
           <div className="flex items-center gap-3 rounded-full border border-sky-200 bg-white px-1.5 py-1.5 shadow-[0_10px_20px_rgba(15,23,42,0.08)]">
-            <div className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-orange-100 via-amber-50 to-sky-100 text-sm font-semibold text-slate-700">
+            <div className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-orange-100 via-amber-50 to-sky-100 text-xs font-semibold text-slate-700">
               AN
             </div>
           </div>
