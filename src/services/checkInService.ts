@@ -82,10 +82,19 @@ export const checkInService = {
 
   getSessionById : async (sessionId : string) : Promise<ServiceResult<CheckInSessionDto>> => {
     try {
-      const response = await axiosClient.get(`/api/CheckInSession/${sessionId}`)
+      const response = await axiosClient.get<CheckInSessionDto>(`/api/CheckInSession/${sessionId}`)
       return ServiceResult.ok(response.data, response.status)
     } catch (error) {
       return mapAxiosErrorToServiceResult<CheckInSessionDto>(error, 'Lỗi khi lấy ra sesion')
+    }
+  },
+
+  getSessionResultById: async (sessionId: string): Promise<ServiceResult<CheckInCompletedDto>> => {
+    try {
+      const response = await axiosClient.get<CheckInCompletedDto>(`/api/CheckInSession/${sessionId}/result`)
+      return ServiceResult.ok(response.data, response.status)
+    } catch (error) {
+      return mapAxiosErrorToServiceResult<CheckInCompletedDto>(error, 'Lỗi khi lấy ra kết quả session')
     }
   },
 
