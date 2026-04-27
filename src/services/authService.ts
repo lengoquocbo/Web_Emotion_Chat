@@ -26,5 +26,5 @@ export const LogoutService = async (): Promise<void> => {
 }
 
 export const getGoogleLoginUrl = (): string => {
-  return 'https://localhost:7138/api/Auth/google-login'
+  return '/api/Auth/google-login'
 }
