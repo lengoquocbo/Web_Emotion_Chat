@@ -23,8 +23,6 @@ export interface Message {
 
 export interface Room {
   id: string
-  communityId: string | null
-  communityName: string | null
   name: string | null
   roomType: RoomType
   status: RoomStatus

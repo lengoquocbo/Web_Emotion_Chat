@@ -7,8 +7,6 @@ import {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_API_URL as string
-
 // Timeout chờ trước mỗi lần retry (ms): 0s, 2s, 5s, 10s, rồi null = dừng
 const RETRY_DELAYS = [0, 2_000, 5_000, 10_000]
 
@@ -20,7 +18,7 @@ const RETRY_DELAYS = [0, 2_000, 5_000, 10_000]
 
 export function createHubConnection(hubPath: '/hubs/chat' | '/hubs/presence'): HubConnection {
   return new HubConnectionBuilder()
-    .withUrl(`${BASE_URL}${hubPath}`, {
+    .withUrl(hubPath, {
       // withCredentials: true để cookie "token" được gửi khi negotiate qua HTTP
       withCredentials: true,
     })
