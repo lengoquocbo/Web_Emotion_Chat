@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import AIChatComposer from '@/components/ai-support/AIChatComposer'
 import AIChatHeader from '@/components/ai-support/AIChatHeader'
@@ -12,8 +13,28 @@ import type {
   AISummary,
   CheckInStage,
 } from '@/components/ai-support/ai-support-data'
+import CheckInCompletedPanel from '@/components/matching/CheckInCompletedPanel'
+import MatchingQueuePanel from '@/components/matching/MatchingQueuePanel'
 import { useCheckIn } from '@/hooks/chat/useCheckIn'
-import { CheckInStatus, CheckInStep, type CheckInSessionDto } from '@/types/checkIn'
+import { useMatchingQueue } from '@/hooks/matching/useMatchingQueue'
+import {
+  buildSessionPreview,
+  buildSessionTitle,
+  formatSessionTimestamp,
+  getSafeSessionId,
+  mapStepToStage,
+} from '@/lib/checkInSessionUi'
+import { matchingService } from '@/services/matchingService'
+import {
+  CheckInStatus,
+  CheckInStep,
+  type CheckInCompletedDto,
+  type CheckInSessionDto,
+} from '@/types/checkIn'
+import {
+  MatchingRequestStatus,
+  MatchingRoomStatus,
+} from '@/types/matching'
 
 const DRAFT_THREAD_ID = 'draft-check-in'
 
@@ -31,6 +52,8 @@ const stagePlaceholders: Record<CheckInStage, string> = {
   completed: '',
 }
 
+type WorkspaceView = 'draft' | 'checkin' | 'completed' | 'queue'
+
 const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 const formatCurrentTime = () => timeFormatter.format(new Date())
@@ -43,37 +66,6 @@ const createStatusMessage = (text: string): AIMessage => ({
   kind: 'status',
 })
 
-const mapStepToStage = (
-  step: CheckInStep | null | undefined,
-  status: CheckInStatus | null | undefined,
-): CheckInStage => {
-  if (status === CheckInStatus.Completed || step === CheckInStep.Completed) {
-    return 'completed'
-  }
-
-  if (
-    status === CheckInStatus.AwaitingConfirmation ||
-    step === CheckInStep.AwaitingConfirmation ||
-    step === CheckInStep.SummaryGenerated
-  ) {
-    return 'summary'
-  }
-
-  if (step === CheckInStep.Step1Emotion) {
-    return 'emotion'
-  }
-
-  if (step === CheckInStep.Step2MainIssue) {
-    return 'issue'
-  }
-
-  if (step === CheckInStep.Step3DeepDive) {
-    return 'deepdive'
-  }
-
-  return 'idle'
-}
-
 const mapSummaryToCard = (summary: string | null | undefined): AISummary | null => {
   if (!summary) {
     return null
@@ -85,70 +77,6 @@ const mapSummaryToCard = (summary: string | null | undefined): AISummary | null 
     deepdive: 'Captured in summary',
     narrative: summary,
   }
-}
-
-const formatSessionTimestamp = (session: CheckInSessionDto) => {
-  const rawValue = session.updatedAt ?? session.completedAt ?? session.createdAt
-
-  if (!rawValue) {
-    return formatCurrentTime()
-  }
-
-  const date = new Date(rawValue)
-
-  if (Number.isNaN(date.getTime())) {
-    return rawValue
-  }
-
-  return timeFormatter.format(date)
-}
-
-const getSafeSessionId = (session: CheckInSessionDto) => {
-  const rawValue = session.sessionId ?? session.id
-
-  if (typeof rawValue === 'string' && rawValue.trim().length > 0) {
-    return rawValue
-  }
-
-  const fallbackSource =
-    session.createdAt ??
-    session.updatedAt ??
-    session.completedAt ??
-    session.cancelledAt ??
-    session.currentStep ??
-    'unknown'
-
-  return `unknown-session-${String(fallbackSource).replace(/\s+/g, '-').toLowerCase()}`
-}
-
-const buildSessionTitle = (session: CheckInSessionDto) => {
-  const summary = session.confirmedSummary ?? session.editedSummary ?? session.generatedSummary
-
-  if (typeof summary === 'string' && summary.trim().length > 0) {
-    return summary.length > 40 ? `${summary.slice(0, 40)}...` : summary
-  }
-
-  return `Check-in mới`
-}
-
-const buildSessionPreview = (session: CheckInSessionDto) => {
-  if (typeof session.confirmedSummary === 'string' && session.confirmedSummary.trim().length > 0) {
-    return session.confirmedSummary
-  }
-
-  if (typeof session.editedSummary === 'string' && session.editedSummary.trim().length > 0) {
-    return session.editedSummary
-  }
-
-  if (typeof session.generatedSummary === 'string' && session.generatedSummary.trim().length > 0) {
-    return session.generatedSummary
-  }
-
-  if (typeof session.currentQuestion === 'string' && session.currentQuestion.trim().length > 0) {
-    return session.currentQuestion
-  }
-
-  return session.currentStep ?? 'Session in progress'
 }
 
 const buildMessagesFromSession = (session: CheckInSessionDto | null): AIMessage[] => {
@@ -217,6 +145,10 @@ const isAnswerStage = (stage: CheckInStage): stage is 'emotion' | 'issue' | 'dee
   stage === 'emotion' || stage === 'issue' || stage === 'deepdive'
 
 const AISupportPage = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const requestedSessionId = searchParams.get('sessionId')
+
   const {
     sessionId,
     generatedSummary,
@@ -232,35 +164,27 @@ const AISupportPage = () => {
     confirm,
     reset,
     loadSessionById,
+    loadSessionResultById,
     loadSessions,
     sessions,
   } = useCheckIn()
 
+  const {
+    queueState,
+    loading: matchingLoading,
+    error: matchingError,
+    joinQueue,
+    leaveQueue,
+    setQueueState,
+  } = useMatchingQueue(null)
+
   const [activeThreadId, setActiveThreadId] = useState<string>(DRAFT_THREAD_ID)
   const [editedSummary, setEditedSummary] = useState<string | null>(null)
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('draft')
+  const [selectedResult, setSelectedResult] = useState<CheckInCompletedDto | null>(null)
+  const [joiningQueue, setJoiningQueue] = useState(false)
 
-  useEffect(() => {
-    const bootstrap = async () => {
-      await loadSessions()
-    }
-
-    void bootstrap()
-  }, [])
-
-  useEffect(() => {
-    if (activeSession) {
-      setActiveThreadId(getSafeSessionId(activeSession))
-    }
-  }, [activeSession])
-
-  useEffect(() => {
-    if (activeThreadId === DRAFT_THREAD_ID) {
-      setEditedSummary(null)
-      return
-    }
-
-    setEditedSummary(activeSession?.editedSummary ?? null)
-  }, [activeSession, activeThreadId])
+  const conversationEndRef = useRef<HTMLDivElement | null>(null)
 
   const threads = useMemo(
     () =>
@@ -294,39 +218,185 @@ const AISupportPage = () => {
   }, [activeSession, activeThreadId, sessions])
 
   const currentStage =
-    activeThreadId === DRAFT_THREAD_ID
-      ? 'idle'
-      : selectedSession
-        ? mapStepToStage(selectedSession.currentStep, selectedSession.status)
-        : mapStepToStage(currentStep, status)
+    workspaceView === 'completed' || workspaceView === 'queue'
+      ? 'completed'
+      : workspaceView === 'draft'
+        ? 'idle'
+        : selectedSession
+          ? mapStepToStage(selectedSession.currentStep, selectedSession.status)
+          : mapStepToStage(currentStep, status)
 
-  const originalSummary = selectedSession
-    ? mapSummaryToCard(selectedSession.generatedSummary ?? generatedSummary)
-    : null
+  const originalSummary =
+    workspaceView === 'checkin' && selectedSession
+      ? mapSummaryToCard(selectedSession.generatedSummary ?? generatedSummary)
+      : null
 
-  const rewrittenSummary = selectedSession
-    ? mapSummaryToCard(editedSummary ?? selectedSession.editedSummary)
-    : null
+  const rewrittenSummary =
+    workspaceView === 'checkin' && selectedSession
+      ? mapSummaryToCard(editedSummary ?? selectedSession.editedSummary)
+      : null
 
-  const confirmedSummary = selectedSession
-    ? mapSummaryToCard(selectedSession.confirmedSummary ?? result?.confirmedSummary)
-    : null
+  const confirmedSummary =
+    workspaceView === 'checkin' && selectedSession
+      ? mapSummaryToCard(selectedSession.confirmedSummary ?? result?.confirmedSummary)
+      : null
 
   const currentSummary = confirmedSummary ?? rewrittenSummary ?? originalSummary
-
-  const currentMessages = useMemo(() => buildMessagesFromSession(selectedSession), [selectedSession])
+  const currentMessages = useMemo(
+    () => (workspaceView === 'checkin' ? buildMessagesFromSession(selectedSession) : []),
+    [selectedSession, workspaceView],
+  )
   const hasConversation = currentMessages.length > 0
-  const showWelcome = activeThreadId === DRAFT_THREAD_ID
+  const showWelcome = workspaceView === 'draft'
   const activeSessionKey = activeSession ? getSafeSessionId(activeSession) : sessionId
   const showComposer =
+    workspaceView === 'checkin' &&
     activeSessionKey === activeThreadId &&
     selectedSession?.status !== CheckInStatus.Completed &&
     isAnswerStage(currentStage)
   const isWaitingForSummary =
+    workspaceView === 'checkin' &&
     loading &&
     activeSessionKey === activeThreadId &&
     currentStage === 'deepdive' &&
     !currentSummary
+
+  const clearMatchingState = useCallback(() => {
+    setSelectedResult(null)
+    setQueueState(null)
+    setJoiningQueue(false)
+  }, [setQueueState])
+
+  const openSession = useCallback(
+    async (threadId: string) => {
+      setActiveThreadId(threadId)
+
+      if (threadId === DRAFT_THREAD_ID) {
+        reset()
+        setEditedSummary(null)
+        clearMatchingState()
+        setWorkspaceView('draft')
+        navigate('/ai', { replace: true })
+        return
+      }
+
+      const targetSession = sessions.find((session) => getSafeSessionId(session) === threadId)
+
+      if (!targetSession) {
+        return
+      }
+
+      const selectedSessionId = getSafeSessionId(targetSession)
+      navigate(`/ai?sessionId=${selectedSessionId}`, { replace: true })
+
+      if (targetSession.status !== CheckInStatus.Completed) {
+        clearMatchingState()
+        setEditedSummary(null)
+        setWorkspaceView('checkin')
+        await loadSessionById(selectedSessionId)
+        return
+      }
+
+      const sessionResult = await loadSessionResultById(selectedSessionId)
+
+      if (!sessionResult) {
+        return
+      }
+
+      setSelectedResult(sessionResult)
+
+      if (!sessionResult.matchingRequestId) {
+        setQueueState(null)
+        setWorkspaceView('completed')
+        return
+      }
+
+      const matchingStatus = await matchingService.getStatus(sessionResult.matchingRequestId)
+
+      if (!matchingStatus.success || !matchingStatus.data) {
+        setQueueState(null)
+        setWorkspaceView('completed')
+        return
+      }
+
+      const nextQueueState = matchingStatus.data
+
+      setQueueState(nextQueueState)
+
+      if (
+        nextQueueState.requestStatus === MatchingRequestStatus.Queued ||
+        nextQueueState.requestStatus === MatchingRequestStatus.Assigned ||
+        nextQueueState.canEnterRoom ||
+        nextQueueState.roomStatus === MatchingRoomStatus.Ready ||
+        nextQueueState.roomStatus === MatchingRoomStatus.Active
+      ) {
+        setWorkspaceView('queue')
+        return
+      }
+
+      setWorkspaceView('completed')
+    },
+    [
+      clearMatchingState,
+      loadSessionById,
+      loadSessionResultById,
+      navigate,
+      reset,
+      sessions,
+      setQueueState,
+    ],
+  )
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      const sessionList = await loadSessions()
+
+      if (!requestedSessionId || !sessionList) {
+        return
+      }
+
+      const targetSession = sessionList.find((session) => getSafeSessionId(session) === requestedSessionId)
+
+      if (targetSession) {
+        await openSession(requestedSessionId)
+      }
+    }
+
+    void bootstrap()
+    // Intentionally keyed only by the requested session id to avoid re-running on every render
+    // when hook functions receive new identities.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedSessionId])
+
+  useEffect(() => {
+    if (activeSession && workspaceView === 'checkin') {
+      setActiveThreadId(getSafeSessionId(activeSession))
+    }
+  }, [activeSession, workspaceView])
+
+  useEffect(() => {
+    if (workspaceView !== 'checkin') {
+      return
+    }
+
+    if (activeThreadId === DRAFT_THREAD_ID) {
+      setEditedSummary(null)
+      return
+    }
+
+    setEditedSummary(activeSession?.editedSummary ?? null)
+  }, [activeSession, activeThreadId, workspaceView])
+
+  useEffect(() => {
+    if (workspaceView !== 'checkin') {
+      return
+    }
+
+    conversationEndRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end',
+    })
+  }, [currentMessages, currentSummary, isWaitingForSummary, result, workspaceView])
 
   const handleRefreshSessions = async () => {
     const sessionList = await loadSessions()
@@ -343,13 +413,12 @@ const AISupportPage = () => {
   }
 
   const handleNewChat = () => {
-    reset()
-    setEditedSummary(null)
-    setActiveThreadId(DRAFT_THREAD_ID)
+    void openSession(DRAFT_THREAD_ID)
   }
 
   const handleStartCheckIn = async () => {
     setEditedSummary(null)
+    clearMatchingState()
 
     const response = await start('Text')
 
@@ -357,9 +426,12 @@ const AISupportPage = () => {
       return
     }
 
-    setActiveThreadId(response.sessionId)
+    const nextSessionId = response.sessionId
+    setActiveThreadId(nextSessionId)
+    setWorkspaceView('checkin')
+    navigate(`/ai?sessionId=${nextSessionId}`, { replace: true })
     await loadSessions()
-    await loadSessionById(response.sessionId)
+    await loadSessionById(nextSessionId)
   }
 
   const handleSendMessage = async (message: string) => {
@@ -378,18 +450,6 @@ const AISupportPage = () => {
     }
 
     await handleRefreshSessions()
-  }
-
-  const handleSelectThread = async (threadId: string) => {
-    setActiveThreadId(threadId)
-
-    if (threadId === DRAFT_THREAD_ID) {
-      reset()
-      setEditedSummary(null)
-      return
-    }
-
-    await loadSessionById(threadId)
   }
 
   const handleRewriteSummary = () => {
@@ -418,7 +478,170 @@ const AISupportPage = () => {
     }
 
     setEditedSummary(response.confirmedSummary)
-    await handleRefreshSessions()
+    setSelectedResult(response)
+    setQueueState(null)
+    setWorkspaceView('completed')
+    navigate(`/ai?sessionId=${response.sessionId}`, { replace: true })
+    await loadSessions()
+  }
+
+  const handleJoinQueue = () => {
+    const matchingRequestId = selectedResult?.matchingRequestId
+
+    if (!matchingRequestId) {
+      return
+    }
+
+    void (async () => {
+      setJoiningQueue(true)
+      const response = await joinQueue(matchingRequestId)
+      setJoiningQueue(false)
+
+      if (!response) {
+        return
+      }
+
+      setQueueState(response)
+      setWorkspaceView('queue')
+    })()
+  }
+
+  const handleLeaveQueue = () => {
+    const matchingRequestId = selectedResult?.matchingRequestId
+
+    if (!matchingRequestId) {
+      return
+    }
+
+    void (async () => {
+      const success = await leaveQueue(matchingRequestId)
+
+      if (success) {
+        setWorkspaceView('completed')
+      }
+    })()
+  }
+
+  const handleEnterRoom = () => {
+    if (!queueState?.roomId) {
+      return
+    }
+
+    navigate(`/groups?roomId=${queueState.roomId}`)
+  }
+
+  const handleDefer = () => {
+    navigate('/home')
+  }
+
+  const renderWorkspace = () => {
+    if (showWelcome) {
+      return (
+        <div className="app-scrollbar flex h-full items-center justify-center overflow-y-auto px-4">
+          <AICheckInWelcome isStarting={loading} onStart={handleStartCheckIn} />
+        </div>
+      )
+    }
+
+    if (workspaceView === 'completed' && selectedResult) {
+      return (
+        <div className="app-scrollbar h-full overflow-y-auto pr-1">
+          <CheckInCompletedPanel
+            result={selectedResult}
+            joiningQueue={joiningQueue}
+            error={matchingError}
+            onJoinQueue={handleJoinQueue}
+            onDefer={handleDefer}
+          />
+        </div>
+      )
+    }
+
+    if (workspaceView === 'queue') {
+      return (
+        <div className="app-scrollbar h-full overflow-y-auto pr-1">
+          <MatchingQueuePanel
+            result={selectedResult}
+            queueState={queueState}
+            loading={matchingLoading}
+            error={matchingError}
+            contextLoading={loading && !selectedResult}
+            onEnterRoom={handleEnterRoom}
+            onLeaveQueue={handleLeaveQueue}
+            onDefer={handleDefer}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div className="app-scrollbar h-full overflow-y-auto pr-1">
+        <div className="mx-auto max-w-5xl space-y-4 pb-4">
+          {error ? (
+            <div className="rounded-[1.5rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+
+          {hasConversation ? <AIConversation messages={currentMessages} /> : null}
+
+          {isWaitingForSummary ? (
+            <div className="rounded-[2rem] border border-sky-100 bg-white px-6 py-5 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
+                Summary in progress
+              </p>
+              <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
+                He thong dang tong hop noi dung tu cau tra loi cua ban va dua ra tong ket.
+              </p>
+            </div>
+          ) : null}
+
+          {currentSummary ? (
+            <AISummaryCard
+              summary={currentSummary}
+              originalSummary={originalSummary}
+              rewrittenSummary={rewrittenSummary}
+              isBusy={loading}
+              canRewrite={
+                activeSessionKey === activeThreadId &&
+                selectedSession?.status === CheckInStatus.AwaitingConfirmation
+              }
+              showActions={selectedSession?.status !== CheckInStatus.Completed}
+              onConfirm={handleConfirmSummary}
+              onRewrite={handleRewriteSummary}
+            />
+          ) : null}
+
+          {!hasConversation && !currentSummary && selectedSession ? (
+            <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Session Snapshot
+              </p>
+              <p className="mt-3 text-base leading-7">
+                Session nay dang o trang thai <span className="font-semibold">{selectedSession.status}</span> tai
+                buoc <span className="font-semibold">{selectedSession.currentStep}</span>.
+              </p>
+            </div>
+          ) : null}
+
+          {result ? (
+            <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Session Completed
+              </p>
+              <p className="mt-3 text-base leading-7">Summary da duoc xac nhan.</p>
+              <div className="mt-4">
+                <div className="rounded-[1.5rem] bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                  {createStatusMessage('Summary da duoc xac nhan.').text}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div ref={conversationEndRef} />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -426,87 +649,14 @@ const AISupportPage = () => {
       <div className="grid min-h-0 gap-4 lg:h-full lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-h-0 flex-col overflow-hidden rounded-[2rem] bg-[#f7fbff] p-4 shadow-[0_24px_55px_rgba(15,23,42,0.08)]">
           <header className="shrink-0">
-            <AIChatHeader stage={currentStage} isBusy={loading} />
+            <AIChatHeader stage={currentStage} isBusy={loading || matchingLoading || joiningQueue} />
           </header>
 
           <div className="shrink-0 pt-4">
             <AIProgressSteps stage={currentStage} />
           </div>
 
-          <main className="min-h-0 flex-1 overflow-hidden pt-4">
-            {showWelcome ? (
-              <div className="app-scrollbar flex h-full items-center justify-center overflow-y-auto px-4">
-                <AICheckInWelcome isStarting={loading} onStart={handleStartCheckIn} />
-              </div>
-            ) : (
-              <div className="app-scrollbar h-full overflow-y-auto pr-1">
-                <div className="mx-auto max-w-5xl space-y-4 pb-4">
-                  {error ? (
-                    <div className="rounded-[1.5rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-                      {error}
-                    </div>
-                  ) : null}
-
-                  {hasConversation ? <AIConversation messages={currentMessages} /> : null}
-
-                  {isWaitingForSummary ? (
-                    <div className="rounded-[2rem] border border-sky-100 bg-white px-6 py-5 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
-                        Summary in progress
-                      </p>
-                      <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-                        Hệ thống tổng hợp nội dung từ câu trả lời của bạn và đưa ra tổng kết.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {currentSummary ? (
-                    <AISummaryCard
-                      summary={currentSummary}
-                      originalSummary={originalSummary}
-                      rewrittenSummary={rewrittenSummary}
-                      isBusy={loading}
-                      canRewrite={
-                        activeSessionKey === activeThreadId &&
-                        selectedSession?.status === CheckInStatus.AwaitingConfirmation
-                      }
-                      showActions={selectedSession?.status !== CheckInStatus.Completed}
-                      onConfirm={handleConfirmSummary}
-                      onRewrite={handleRewriteSummary}
-                    />
-                  ) : null}
-
-                  {!hasConversation && !currentSummary && selectedSession ? (
-                    <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Session Snapshot
-                      </p>
-                      <p className="mt-3 text-base leading-7">
-                        Session này đang ở trạng thái <span className="font-semibold">{selectedSession.status}</span>{' '}
-                        tai buoc <span className="font-semibold">{selectedSession.currentStep}</span>.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {result ? (
-                    <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Session Completed
-                      </p>
-                      <p className="mt-3 text-base leading-7">
-                        Summary đã được xác nhận.
-                      </p>
-                      <div className="mt-4">
-                        <div className="rounded-[1.5rem] bg-slate-50 px-4 py-4 text-sm text-slate-700">
-                          {createStatusMessage('Summary đã được xác nhận.').text}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            )}
-          </main>
+          <main className="min-h-0 flex-1 overflow-hidden pt-4">{renderWorkspace()}</main>
 
           {showComposer ? (
             <footer className="shrink-0 pt-4">
@@ -527,7 +677,7 @@ const AISupportPage = () => {
           activeThreadId={activeThreadId}
           onNewChat={handleNewChat}
           onSelectThread={(threadId) => {
-            void handleSelectThread(threadId)
+            void openSession(threadId)
           }}
         />
       </div>

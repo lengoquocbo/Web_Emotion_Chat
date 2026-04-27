@@ -234,6 +234,35 @@ export const useCheckIn = () => {
     return session
   }
 
+  const loadSessionResultById = async (
+    sessionId: string,
+  ): Promise<CheckInCompletedDto | undefined> => {
+    setLoading(true)
+
+    const result = await checkInService.getSessionResultById(sessionId)
+
+    if (!result.success || !result.data) {
+      setError(result.message ?? 'Loi khi lay ket qua session')
+      return
+    }
+
+    const sessionResult = result.data
+
+    setState((prev) => ({
+      ...prev,
+      sessionId: sessionResult.sessionId,
+      question: null,
+      currentStep: CheckInStep.Completed,
+      status: CheckInStatus.Completed,
+      generatedSummary: sessionResult.confirmedSummary,
+      result: sessionResult,
+      loading: false,
+      error: null,
+    }))
+
+    return sessionResult
+  }
+
   const confirm = async (editedSummary?: string): Promise<CheckInCompletedDto | undefined> => {
     if (!state.sessionId) return
     setLoading(true)
@@ -345,6 +374,7 @@ export const useCheckIn = () => {
     reset,
     loadActice,
     loadSessionById,
+    loadSessionResultById,
     loadSessions,
     sessions,
   }
