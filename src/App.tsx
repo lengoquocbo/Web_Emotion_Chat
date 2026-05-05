@@ -6,6 +6,8 @@ import AnalyticsPage from './pages/Analytics/AnalyticsPage'
 import AISupportPage from './pages/AISupport/AISupportPage'
 import ChatFriendPage from './pages/ChatFriend/ChatFriendPage'
 import ProfilePage from './pages/Profile/ProfilePage'
+import OtherUserProfilePage from './pages/Profile/OtherUserProfilePage'
+import NotificationsPage from './pages/Notifications/NotificationsPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/Auth/LoginPage'
 import RegisterPage from './pages/Auth/RegisterPage'
@@ -29,7 +31,9 @@ const App = () => (
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/friends" element={<ChatFriendPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/people/:userId" element={<OtherUserProfilePage />} />
         </Route>
       </Route>
     </Routes>

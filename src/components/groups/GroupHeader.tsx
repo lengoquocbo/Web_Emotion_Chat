@@ -1,6 +1,7 @@
-import { Bell, MessageSquareMore, Settings, ChevronDown } from 'lucide-react'
+import { MessageSquareMore, Settings, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import type { Room } from '@/types/Chat'
+import NotificationButton from '@/components/layout/NotificationButton'
 
 interface GroupHeaderProps {
   room: Room
@@ -64,9 +65,7 @@ export default function GroupHeader({ room, rooms, onSelectRoom }: GroupHeaderPr
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5">
-            <Bell className="size-4" />
-          </button>
+          <NotificationButton />
           <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5">
             <Settings className="size-4" />
           </button>

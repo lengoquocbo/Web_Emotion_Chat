@@ -1,31 +1,70 @@
-import { ImagePlus, Mic, Plus, Send, Smile } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Loader2, Plus, Send } from 'lucide-react'
 
-export default function FriendChatComposer() {
+import type { ConnectionStatus } from '@/hooks/chat/Usesignalr'
+import type { Message } from '@/types/Chat'
+
+interface FriendChatComposerProps {
+  onSend: (content: string, messageType?: Message['messageType']) => Promise<void>
+  isSending: boolean
+  status: ConnectionStatus
+  disabled?: boolean
+}
+
+export default function FriendChatComposer({
+  onSend,
+  isSending,
+  status,
+  disabled = false,
+}: FriendChatComposerProps) {
+  const [text, setText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const isDisconnected = status === 'disconnected' || status === 'error'
+  const blocked = disabled || isDisconnected || isSending
+
+  const handleSend = async () => {
+    if (!text.trim() || blocked) return
+
+    try {
+      await onSend(text)
+      setText('')
+      inputRef.current?.focus()
+    } catch {
+      // send errors are already handled upstream
+    }
+  }
+
   return (
-    <section className="mx-auto max-w-4xl ">
+    <section className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
-        <div className="flex min-h-[76px] flex-1 items-center gap-3 rounded-full bg-white px-5 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.10)]">
-          <button className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700">
-            <Plus className="size-5" />
-          </button>
-          <button className="flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <ImagePlus className="size-5" />
+        <div className="flex min-h-[54px] flex-1 items-center gap-3 rounded-full bg-white px-4 py-2.5 shadow-[0_14px_36px_rgba(15,23,42,0.08)]">
+          <button className="flex size-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700">
+            <Plus className="size-4" />
           </button>
           <input
+            ref={inputRef}
             type="text"
-            placeholder="Send a calm message..."
-            className="flex-1 bg-transparent text-xl text-slate-700 outline-none placeholder:text-slate-400"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault()
+                void handleSend()
+              }
+            }}
+            placeholder={disabled ? 'Select a friend to start chatting...' : isDisconnected ? 'Reconnecting...' : 'Send a calm message...'}
+            disabled={blocked}
+            className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 disabled:opacity-50"
           />
-          <button className="flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <Smile className="size-5" />
-          </button>
-          <button className="flex size-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-            <Mic className="size-5" />
-          </button>
         </div>
 
-        <button className="flex size-[72px] items-center justify-center rounded-full bg-sky-800 text-white shadow-[0_18px_40px_rgba(3,105,161,0.28)] transition hover:-translate-y-1 hover:bg-sky-900">
-          <Send className="size-7 fill-current" />
+        <button
+          onClick={() => void handleSend()}
+          disabled={!text.trim() || blocked}
+          className="flex size-12 items-center justify-center rounded-full bg-sky-800 text-white shadow-[0_14px_28px_rgba(3,105,161,0.24)] transition hover:-translate-y-0.5 hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {isSending ? <Loader2 className="size-4.5 animate-spin" /> : <Send className="size-4.5 fill-current" />}
         </button>
       </div>
     </section>

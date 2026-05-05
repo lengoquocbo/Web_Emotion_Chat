@@ -26,7 +26,7 @@ export default function AuthShell({
       <div className="mx-auto flex h-full max-w-[1360px] flex-col">
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="grid h-full max-h-[700px] w-full max-w-[1000px] overflow-hidden rounded-[48px] bg-white/55 shadow-[0_30px_90px_rgba(71,85,105,0.18)] backdrop-blur xl:grid-cols-[0.95fr_1.05fr]">
-            <section className="min-h-0 overflow-y-auto bg-[linear-gradient(180deg,rgba(244,240,255,0.95)_0%,rgba(235,241,255,0.96)_100%)] px-8 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+      <section className="app-scrollbar min-h-0 overflow-y-auto bg-[linear-gradient(180deg,rgba(244,240,255,0.95)_0%,rgba(235,241,255,0.96)_100%)] px-8 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
               <Link to="/" className="inline-flex items-center gap-3 text-sky-800">
                 <Leaf className="size-8" />
                 <span className="text-[2rem] font-semibold tracking-tight">Sanctuary</span>

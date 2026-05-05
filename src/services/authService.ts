@@ -1,6 +1,6 @@
 import axiosClient from './axiosClient'
 import { ApiResponse } from '../types/apiresponse'
-import { AuthResponse, LoginRequest, RegisterRequest, AuthUser } from '../types/auth'
+import { AuthResponse, LoginRequest, RegisterRequest, AuthUser, UpdateProfileRequest } from '../types/auth'
 
 export const LoginService = async (
   data: LoginRequest,
@@ -11,6 +11,21 @@ export const LoginService = async (
 
 export const getMeService = async (): Promise<AuthUser> => {
   const response = await axiosClient.get<AuthUser>('/api/Auth/me')
+  return response.data
+}
+
+export const getUserProfile = async (userId: string): Promise<AuthUser> => {
+  const response = await axiosClient.get<AuthUser>(`/api/Auth/profile/${userId}`)
+  return response.data
+}
+
+export const UpdateProfileService = async (data: UpdateProfileRequest): Promise<AuthUser> => {
+  const response = await axiosClient.put<AuthUser>('/api/Auth/profile', data)
+  return response.data
+}
+
+export const searchUsers = async (username : string, take : number): Promise<AuthUser[]> => {
+  const response = await axiosClient.get<AuthUser[]>(`/api/Auth/search?username=${encodeURIComponent(username)}&take=${take}`)
   return response.data
 }
 

@@ -308,7 +308,7 @@ export default function GroupThread({
     <section
       ref={containerRef}
       onScroll={handleScroll}
-      className="h-full overflow-y-auto rounded-[2rem] bg-white px-4 py-6 sm:px-6"
+      className="app-scrollbar h-full overflow-y-auto rounded-[2rem] bg-white px-4 py-6 sm:px-6"
     >
       {/* Spinner khi load more (scroll lên) */}
       {isLoadingMore && (
