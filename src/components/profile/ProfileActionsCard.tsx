@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/auth/useAuth'
-import { LogoutService } from '@/services/authService'
+//import { LogoutService } from '@/services/authService'
 
 export default function ProfileActionsCard() {
   const navigate = useNavigate()
@@ -13,14 +13,17 @@ export default function ProfileActionsCard() {
   const handleLogout = async () => {
     setLoading(true)
     try {
-      await LogoutService()
+      await logout() // authContext đã xử lý đúng thứ tự:
+                     // 1. stopPresenceConnection() — SignalR stop khi còn cookie
+                     // 2. LogoutService()          — xóa cookie
+                     // 3. setUser(null)            — clear state
     } catch {
-      // kÃª cáº£ lá»—i váº«n quay vá» trang login
+      // ignore
     } finally {
-      logout()
       setLoading(false)
       navigate('/login', { replace: true })
     }
+  
   }
 
   return (

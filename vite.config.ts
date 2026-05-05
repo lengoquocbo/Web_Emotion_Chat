@@ -40,7 +40,14 @@ export default defineConfig({
             }
           })
         },
-      }
+      },
+      // Static files: ảnh và file upload được serve từ wwwroot/uploads/
+      // Không cần cookie nên config đơn giản hơn
+      '/uploads': {
+        target: 'https://localhost:7138',
+        changeOrigin: true,
+        secure: false,
+      },
     }
   },
   plugins: [react()],

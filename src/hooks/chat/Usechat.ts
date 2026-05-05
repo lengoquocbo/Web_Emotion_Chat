@@ -7,9 +7,20 @@ import { messageCacheStore } from '@/stores/messageCacheStore'
 import { ChatEvents, ChatMethods } from '@/types/Signalr.events'
 import type { Message, SendMessageRequest } from '@/types/Chat'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface UseChatOptions {
   roomId: string
   pageSize?: number
+}
+
+/** Metadata file tuỳ chọn khi gửi ảnh hoặc file tài liệu */
+interface FileMeta {
+  fileUrl: string
+  fileName: string
+  fileSize: number
 }
 
 interface UseChatReturn {
@@ -19,9 +30,14 @@ interface UseChatReturn {
   isSending: boolean
   hasMore: boolean
   status: ReturnType<typeof useSignalR>['status']
-  sendMessage: (content: string, messageType?: Message['messageType']) => Promise<void>
+  /** content: text hiển thị; messageType: 'Text' | 'Image' | 'File'; fileMeta: tuỳ chọn */
+  sendMessage: (content: string, messageType?: Message['messageType'], fileMeta?: FileMeta) => Promise<void>
   loadMore: () => Promise<void>
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function useChat({ roomId, pageSize = 30 }: UseChatOptions): UseChatReturn {
   const [isLoading, setIsLoading]         = useState(false)
@@ -58,6 +74,7 @@ export function useChat({ roomId, pageSize = 30 }: UseChatOptions): UseChatRetur
         const result = await getMessagesByRoom(roomId, 1, pageSize)
         console.log('[useChat] loaded', result.items?.length, 'messages, total:', result.totalCount)
 
+        // API trả về DESC (mới nhất trước) → reverse để hiển thị từ cũ đến mới
         const sorted = [...(result.items ?? [])].reverse()
         const more   = result.totalCount > pageSize
         messageCacheStore.init(roomId, sorted, more)
@@ -96,7 +113,7 @@ export function useChat({ roomId, pageSize = 30 }: UseChatOptions): UseChatRetur
     }
   }, [connection, roomId, status])
 
-  // ── Lắng nghe ReceiveMessage → append cache ───────────────────────────────
+  // ── Lắng nghe ReceiveMessage → append vào cache ───────────────────────────
   useEffect(() => {
     if (!connection) {
       console.log('[useChat] no connection, skip ReceiveMessage listener')
@@ -117,7 +134,7 @@ export function useChat({ roomId, pageSize = 30 }: UseChatOptions): UseChatRetur
     }
   }, [connection])
 
-  // ── Load thêm (scroll lên) ────────────────────────────────────────────────
+  // ── Load thêm tin cũ khi scroll lên ──────────────────────────────────────
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return
     const nextPage = pageNumber + 1
@@ -133,19 +150,31 @@ export function useChat({ roomId, pageSize = 30 }: UseChatOptions): UseChatRetur
     }
   }, [isLoadingMore, hasMore, pageNumber, roomId, pageSize])
 
-  // ── Gửi tin nhắn ─────────────────────────────────────────────────────────
+  // ── Gửi tin nhắn (text, ảnh, hoặc file) ──────────────────────────────────
   const sendMessage = useCallback(
-    async (content: string, messageType: Message['messageType'] = 'Text') => {
+    async (
+      content: string,
+      messageType: Message['messageType'] = 'Text',
+      fileMeta?: FileMeta,
+    ) => {
       const trimmed = content.trim()
       if (!trimmed || isSending || !connection) {
         console.warn('[useChat] sendMessage blocked — isSending:', isSending, 'connection:', connection?.state)
         return
       }
 
-      const request: SendMessageRequest = { roomId, content: trimmed, messageType }
+      // Xây dựng request — backend nhận qua ChatHub.SendMessage
+      const request: SendMessageRequest = {
+        roomId,
+        content: trimmed,
+        messageType,
+        // Gắn thêm file metadata nếu là tin nhắn file/ảnh
+        ...(fileMeta ?? {}),
+      }
+
       setIsSending(true)
       try {
-        console.log('[useChat] sending message to room', roomId)
+        console.log('[useChat] sending message to room', roomId, 'type:', messageType)
         await invokeHub(connection, ChatMethods.SendMessage, request)
         console.log('[useChat] message sent, waiting for ReceiveMessage broadcast...')
       } catch (err) {
