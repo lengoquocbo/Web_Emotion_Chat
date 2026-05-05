@@ -30,7 +30,7 @@ export default function GroupsPage() {
 
   // ── Fetch rooms ────────────────────────────────────────────────────────────
   useEffect(() => {
-    getMyRooms()
+    getMyRooms('Matching')
       .then(data => {
         setRooms(data)
         if (data.length > 0) setActiveRoom(data[0])
@@ -133,7 +133,7 @@ export default function GroupsPage() {
       </div>
 
       {/* ── Cột 3: Members panel ── */}
-      <div className="w-64 shrink-0 overflow-y-auto">
+      <div className="app-scrollbar w-64 shrink-0 overflow-y-auto">
         <GroupMembersPanel room={activeRoom} />
       </div>
 

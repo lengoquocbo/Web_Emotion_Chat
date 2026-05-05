@@ -24,7 +24,7 @@ export default function RoomSidebar({ rooms, activeRoomId, onSelectRoom }: RoomS
         </button>
       </div>
 
-      <div className="flex flex-col gap-1 overflow-y-auto">
+      <div className="app-scrollbar flex flex-col gap-1 overflow-y-auto">
         {rooms.map((room) => {
           const isActive = room.id === activeRoomId
           const name = room.name ?? `Room #${room.id.slice(0, 6)}`

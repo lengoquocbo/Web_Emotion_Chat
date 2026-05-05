@@ -37,6 +37,30 @@ export const friendThreads = [
   },
 ] as const
 
+export const discoverSuggestions = [
+  {
+    id: 'discover-1',
+    name: 'Ha Linh',
+    subtitle: 'Breathing routines · soft accountability',
+    initials: 'HL',
+    tone: 'from-emerald-100 via-teal-50 to-lime-100',
+  },
+  {
+    id: 'discover-2',
+    name: 'Khanh Vy',
+    subtitle: 'Late-night journaling · anxiety support',
+    initials: 'KV',
+    tone: 'from-sky-100 via-cyan-50 to-blue-100',
+  },
+  {
+    id: 'discover-3',
+    name: 'Tuan Anh',
+    subtitle: 'Gentle check-ins · focus recovery',
+    initials: 'TA',
+    tone: 'from-fuchsia-100 via-rose-50 to-orange-100',
+  },
+] as const
+
 export const friendMessages = [
   {
     id: '1',

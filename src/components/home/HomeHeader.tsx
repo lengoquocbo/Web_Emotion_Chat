@@ -1,5 +1,6 @@
-import { Bell, Search, Settings } from 'lucide-react'
+import { Search, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/auth/useAuth'
+import NotificationButton from '@/components/layout/NotificationButton'
 
 
 export default function HomeHeader() {
@@ -22,9 +23,7 @@ export default function HomeHeader() {
 
       <div className="flex items-center justify-between gap-3 lg:justify-end">
         <div className="flex items-center gap-2">
-          <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-700">
-            <Bell className="size-4" />
-          </button>
+          <NotificationButton />
           <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-700">
             <Settings className="size-4" />
           </button>

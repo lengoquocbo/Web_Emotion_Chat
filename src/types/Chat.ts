@@ -1,6 +1,6 @@
-export type MessageType = 'Text' | 'Image' | 'File' | 'System'
-export type RoomType    = 'Matching' | 'Community' | 'AI'
-export type RoomStatus  = 'Open' | 'Closed'
+export type MessageType = 'Text' | 'Image' | 'File' | 'System' | 'Emotion'
+export type RoomType    = 'Matching' | 'Direcct' | 'Support' | 'AiPrivate'
+export type RoomStatus  = 'Waiting' | 'Closed'| 'Ready' | 'Active'| 'Archived'
 
 // ─── Message — khớp CHÍNH XÁC response backend ───────────────────────────────
 // Backend MessageDto trả về:
@@ -13,6 +13,7 @@ export interface Message {
   senderId: string
   senderUsername: string        // flat field từ backend
   senderDisplayName?: string    // optional
+
   messageType: MessageType
   content: string
 
@@ -40,7 +41,6 @@ export interface Room {
   closedAt: string | null
 }
 
-// ─── Room Member ──────────────────────────────────────────────────────────────
 
 export interface RoomMember {
   userId: string

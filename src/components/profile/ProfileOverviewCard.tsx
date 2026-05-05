@@ -1,53 +1,55 @@
-import { Mail, MapPin, Phone, Sparkles } from 'lucide-react'
+import { Mail, Phone } from 'lucide-react'
 
+import { useAuth } from '@/hooks/auth/useAuth'
 import { Button } from '@/components/ui/button'
 
 export default function ProfileOverviewCard() {
+  const { user } = useAuth()
+
+  const displayName = user?.displayName || user?.username || 'User'
+  const email = user?.email || 'No email'
+  const phone = user?.phone || 'No phone'
+  const initials = displayName
+    .split(' ')
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+
   return (
-    <section className="rounded-[2rem] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] sm:p-7">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-5">
-          <div className="flex size-24 items-center justify-center rounded-[2rem] bg-gradient-to-br from-sky-100 via-blue-50 to-emerald-100 text-2xl font-semibold text-slate-700 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
-            AN
-          </div>
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
-              <Sparkles className="size-4" />
-              Feeling grounded this week
+    <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)] ring-1 ring-slate-100">
+      <div className="h-28 bg-[linear-gradient(135deg,rgba(236,253,245,0.95),rgba(239,246,255,0.95))]" />
+
+      <div className="px-6 pb-5 sm:px-8">
+        <div className="-mt-12 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
+            <div className="flex size-24 items-center justify-center rounded-full border-[6px] border-white bg-gradient-to-br from-amber-300 via-orange-300 to-yellow-200 text-3xl font-semibold text-slate-800 shadow-[0_18px_40px_rgba(251,191,36,0.3)]">
+              {initials}
             </div>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-800">An Nhi</h2>
-            <p className="mt-2 max-w-xl text-base leading-7 text-slate-500">
-              Building softer routines, taking gentle pauses, and learning to treat rest like it matters.
-            </p>
-          </div>
-        </div>
 
-        <Button className="h-11 rounded-full bg-sky-800 px-6 text-white hover:bg-sky-900">
-          Edit Profile
-        </Button>
-      </div>
+            <div className="pb-1">
+              <h2 className="text-[1.8rem] font-semibold tracking-tight text-fuchsia-700">
+                {displayName}
+              </h2>
+              <div className="mt-2 space-y-1.5 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
+                  <Mail className="size-4 text-fuchsia-500" />
+                  <span>{email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="size-4 text-fuchsia-500" />
+                  <span>{phone}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4">
-          <div className="flex items-center gap-3 text-slate-500">
-            <Mail className="size-4" />
-            <span className="text-sm">Email</span>
-          </div>
-          <p className="mt-2 font-medium text-slate-800">annhi@example.com</p>
-        </div>
-        <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4">
-          <div className="flex items-center gap-3 text-slate-500">
-            <Phone className="size-4" />
-            <span className="text-sm">Phone</span>
-          </div>
-          <p className="mt-2 font-medium text-slate-800">+84 912 345 678</p>
-        </div>
-        <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4">
-          <div className="flex items-center gap-3 text-slate-500">
-            <MapPin className="size-4" />
-            <span className="text-sm">Location</span>
-          </div>
-          <p className="mt-2 font-medium text-slate-800">Ho Chi Minh City</p>
+          <Button
+            variant="outline"
+            className="h-11 rounded-full border-fuchsia-300 px-6 text-fuchsia-700 shadow-none hover:bg-fuchsia-50 hover:text-fuchsia-800"
+          >
+            Edit Profile
+          </Button>
         </div>
       </div>
     </section>

@@ -1,4 +1,5 @@
-import { Bell, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import NotificationButton from '@/components/layout/NotificationButton'
 
 import { checkInStepLabels, type CheckInStage } from './ai-support-data'
 
@@ -38,9 +39,7 @@ export default function AIChatHeader({ stage, isBusy }: AIChatHeaderProps) {
         </div>
 
         <div className="flex items-center justify-between gap-3 md:justify-end">
-          <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-700">
-            <Bell className="size-4" />
-          </button>
+          <NotificationButton />
           <button className="flex size-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-700">
             <Settings className="size-4" />
           </button>

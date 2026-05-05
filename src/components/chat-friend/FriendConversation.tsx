@@ -1,58 +1,125 @@
-import { Heart, Sparkles } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { CheckCheck, Loader2 } from 'lucide-react'
 
-import { friendMessages } from './chat-friend-data'
+import { useAuth } from '@/hooks/auth/useAuth'
+import type { Message } from '@/types/Chat'
 
-export default function FriendConversation() {
+interface FriendConversationProps {
+  roomId: string
+  messages: Message[]
+  isLoading: boolean
+  isLoadingMore: boolean
+  hasMore: boolean
+  onLoadMore: () => void
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
+export default function FriendConversation({
+  roomId,
+  messages,
+  isLoading,
+  isLoadingMore,
+  hasMore,
+  onLoadMore,
+}: FriendConversationProps) {
+  const { user } = useAuth()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const prevScrollHeight = useRef(0)
+
+  const currentUserId: string | undefined =
+    (user as any)?.id ?? (user as any)?.userId ?? (user as any)?.Id
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [roomId])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || isLoadingMore) return
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (nearBottom) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoadingMore])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || isLoadingMore) return
+    const diff = el.scrollHeight - prevScrollHeight.current
+    if (diff > 0) el.scrollTop += diff
+  }, [messages.length, isLoadingMore])
+
+  const handleScroll = () => {
+    const el = containerRef.current
+    if (!el || isLoadingMore || !hasMore) return
+    if (el.scrollTop < 80) {
+      prevScrollHeight.current = el.scrollHeight
+      onLoadMore()
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <section className="flex h-full items-center justify-center rounded-[1.6rem] bg-white">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <Loader2 className="size-6 animate-spin" />
+          <p className="text-sm">Loading conversation...</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section className="relative overflow-hidden rounded-[2rem] bg-[linear-gradient(180deg,#f7fbff_0%,#fbfdff_100%)] px-5 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-sky-100/70 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-56 w-56 rounded-full bg-fuchsia-100/50 blur-3xl" />
-
-      <div className="relative z-10 mx-auto max-w-4xl space-y-8">
-        <div className="flex justify-center">
-          <span className="rounded-full bg-white/80 px-5 py-2 text-sm text-slate-400 shadow-sm">Today</span>
+    <section
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="app-scrollbar h-full overflow-y-auto rounded-[1.6rem] bg-[linear-gradient(180deg,#f8fbff_0%,#fbfdff_100%)] px-4 py-5"
+    >
+      {isLoadingMore ? (
+        <div className="mb-4 flex justify-center">
+          <Loader2 className="size-4 animate-spin text-slate-300" />
         </div>
+      ) : null}
 
-        {friendMessages.map((message) => {
-          const isSelf = message.role === 'self'
+      {!hasMore && messages.length > 0 ? (
+        <p className="mb-6 text-center text-[11px] text-slate-300">Start of conversation</p>
+      ) : null}
 
-          return (
-            <div key={message.id} className={`flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[min(100%,720px)] ${isSelf ? 'items-end' : 'items-start'} flex flex-col`}>
-                <div
-                  className={`rounded-[2rem] px-6 py-5 text-[1.04rem] leading-8 shadow-[0_18px_42px_rgba(15,23,42,0.06)] ${
-                    isSelf
-                      ? 'bg-sky-800 text-white'
-                      : 'bg-white text-slate-700'
-                  }`}
-                >
-                  {message.text}
+      <div className="mx-auto max-w-3xl space-y-3.5">
+        {messages.length === 0 ? (
+          <p className="py-20 text-center text-sm text-slate-400">
+            No messages yet. Start with a calm hello.
+          </p>
+        ) : (
+          messages.map((message) => {
+            const isSelf = !!currentUserId && message.senderId === currentUserId
+
+            return (
+              <div key={message.id} className={`flex ${isSelf ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[min(72%,560px)] ${isSelf ? 'items-end' : 'items-start'} flex flex-col`}>
+                  <div
+                    className={`rounded-[1.3rem] px-4 py-2.5 text-sm leading-6 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${
+                      isSelf
+                        ? 'rounded-br-md bg-sky-800 text-white'
+                        : 'rounded-bl-md bg-white text-slate-700'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                  <div className={`mt-1 flex items-center gap-1.5 px-1 text-[11px] text-slate-400 ${isSelf ? 'justify-end' : 'justify-start'}`}>
+                    <span>{formatTime(message.createdAt)}</span>
+                    {isSelf ? <CheckCheck className="size-3.5 text-sky-600" /> : null}
+                  </div>
                 </div>
-                <span className={`mt-2 px-2 text-sm text-slate-400 ${isSelf ? 'text-right' : 'text-left'}`}>
-                  {message.time}
-                </span>
               </div>
-            </div>
-          )
-        })}
-
-        <div className="rounded-[1.75rem] bg-white/85 px-5 py-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 items-center justify-center rounded-full bg-fuchsia-100 text-fuchsia-600">
-              <Sparkles className="size-4" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-700">Gentle Nudge</p>
-              <p className="mt-1 text-sm leading-7 text-slate-500">
-                You both tend to feel calmer after short grounding prompts. Want to save this moment as a comfort ritual?
-              </p>
-            </div>
-            <button className="ml-auto flex size-10 items-center justify-center rounded-full bg-slate-100 text-rose-500 transition hover:bg-rose-50">
-              <Heart className="size-4" />
-            </button>
-          </div>
-        </div>
+            )
+          })
+        )}
       </div>
+
+      <div ref={bottomRef} />
     </section>
   )
 }

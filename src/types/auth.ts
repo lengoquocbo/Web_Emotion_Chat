@@ -22,6 +22,14 @@ export type AuthUser = {
   username: string;
   email: string;
   displayName?: string;
+  phone?: string;
+  avatarUrl?: string
+  Bio?: string
 }
 
+export interface UpdateProfileRequest {
+  displayName?: string
+  bio? : string
+  avatarUrl?: string
+}
 
