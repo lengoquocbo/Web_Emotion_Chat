@@ -10,7 +10,7 @@ export default function EnterRoomButton({ disabled, onClick }: EnterRoomButtonPr
       disabled={disabled}
       className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-600 px-6 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
     >
-      Vao phong chat
+      VÀO PHÒNG CHAT
     </button>
   )
 }

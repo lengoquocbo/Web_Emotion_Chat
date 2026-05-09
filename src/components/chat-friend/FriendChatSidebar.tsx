@@ -3,6 +3,7 @@ import { Search, UserPlus2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/hooks/auth/useAuth'
+import { usePresence } from '@/hooks/chat/usePresence'
 import { searchUsers } from '@/services/authService'
 import { friendshipService } from '@/services/friendshipService'
 import type { FriendshipDto, UserSummaryDto } from '@/types/friendship'
@@ -40,6 +41,7 @@ export default function FriendChatSidebar({
   onOpenDirectRoom,
 }: FriendChatSidebarProps) {
   const { user } = useAuth()
+  const { isOnline } = usePresence()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<FriendTab>('friends')
   const [query, setQuery] = useState('')
@@ -107,6 +109,7 @@ export default function FriendChatSidebar({
                 username: item.username,
                 email: item.email,
                 displayName: item.displayName || item.username,
+                avatarUrl: item.avatarUrl ?? null,
               })),
           )
         } catch {
@@ -210,14 +213,26 @@ export default function FriendChatSidebar({
                     }`}
                   >
                     <div className="relative">
-                      <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 via-rose-50 to-orange-100 text-xs font-semibold text-slate-700">
-                        {(person.displayName || person.username)
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((part) => part[0])
-                          .join('')}
+                      <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-fuchsia-100 via-rose-50 to-orange-100 text-xs font-semibold text-slate-700">
+                        {person.avatarUrl ? (
+                          <img
+                            src={person.avatarUrl}
+                            alt={person.displayName || person.username}
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          (person.displayName || person.username)
+                            .split(' ')
+                            .slice(0, 2)
+                            .map((part) => part[0])
+                            .join('')
+                        )}
                       </div>
-                      <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white bg-emerald-500" />
+                      <span
+                        className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white ${
+                          isOnline(person.id) ? 'bg-emerald-500' : 'bg-slate-300'
+                        }`}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -225,7 +240,9 @@ export default function FriendChatSidebar({
                         <p className="truncate text-sm font-semibold text-slate-800">{person.displayName || person.username}</p>
                         <span className="text-[11px] text-slate-400">{formatRelativeTime(friendship.respondedAt ?? friendship.requestedAt)}</span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-slate-500">{person.email}</p>
+                      <p className={`mt-1 truncate text-xs ${isOnline(person.id) ? 'text-emerald-500' : 'text-slate-500'}`}>
+                        {isOnline(person.id) ? 'Online now' : person.email}
+                      </p>
                     </div>
                   </button>
                 )
@@ -258,8 +275,16 @@ export default function FriendChatSidebar({
                     className="w-full rounded-[1.25rem] bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] px-4 py-3 text-left shadow-[inset_0_0_0_1px_rgba(226,232,240,0.75)] transition hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 via-cyan-50 to-emerald-100 text-xs font-semibold text-slate-700">
-                        {initials}
+                      <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-sky-100 via-cyan-50 to-emerald-100 text-xs font-semibold text-slate-700">
+                        {item.avatarUrl ? (
+                          <img
+                            src={item.avatarUrl}
+                            alt={displayName}
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          initials
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -288,12 +313,20 @@ export default function FriendChatSidebar({
                   className="rounded-[1.25rem] bg-[linear-gradient(135deg,rgba(236,253,245,0.85),rgba(255,255,255,0.98))] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(167,243,208,0.75)]"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 text-xs font-semibold text-slate-700">
-                      {(friendship.requester.displayName || friendship.requester.username)
-                        .split(' ')
-                        .slice(0, 2)
-                        .map((part) => part[0])
-                        .join('')}
+                    <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 text-xs font-semibold text-slate-700">
+                      {friendship.requester.avatarUrl ? (
+                        <img
+                          src={friendship.requester.avatarUrl}
+                          alt={friendship.requester.displayName || friendship.requester.username}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        (friendship.requester.displayName || friendship.requester.username)
+                          .split(' ')
+                          .slice(0, 2)
+                          .map((part) => part[0])
+                          .join('')
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">

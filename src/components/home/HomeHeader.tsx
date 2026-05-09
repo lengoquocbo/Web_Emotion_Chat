@@ -30,8 +30,12 @@ export default function HomeHeader() {
         </div>
 
         <div className="flex items-center gap-3 rounded-full bg-white/90 py-1.5 pl-1.5 pr-4 shadow-[0_10px_20px_rgba(15,23,42,0.08)]">
-          <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-rose-100 to-blue-200 text-sm font-semibold text-slate-700">
-            {finalName[0].toUpperCase()} 
+          <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-amber-200 via-rose-100 to-blue-200 text-sm font-semibold text-slate-700">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={finalName} className="size-full object-cover" />
+            ) : (
+              finalName[0].toUpperCase()
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">{finalName}</p>

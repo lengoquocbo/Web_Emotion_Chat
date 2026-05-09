@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (user: AuthUser) => void;
+  updateUser: (user: Partial<AuthUser>) => void;
   logout: () => void;
 }
 

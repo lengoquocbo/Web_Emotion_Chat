@@ -42,6 +42,10 @@ const Sidebar = () => {
     }
   }
 
+  const handleStartCheckIn = () => {
+    navigate('/ai?start=1')
+  }
+
   return (
     <aside className="flex w-full flex-col gap-6 rounded-[2rem] bg-white/92 p-5 shadow-[0_24px_55px_rgba(15,23,42,0.08)] lg:h-screen lg:w-[250px] lg:shrink-0 lg:overflow-hidden lg:p-6">
       <div>
@@ -81,7 +85,10 @@ const Sidebar = () => {
         <p className="mt-2 text-sm leading-6 text-white/75">
           Pause for one minute and log how your heart feels today.
         </p>
-        <Button className="mt-5 h-11 w-full rounded-full bg-white text-sky-800 hover:bg-sky-50">
+        <Button
+          onClick={handleStartCheckIn}
+          className="mt-5 h-11 w-full rounded-full bg-white text-sky-800 hover:bg-sky-50"
+        >
           Start Check-in
           <ChevronRight className="size-4" />
         </Button>

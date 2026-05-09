@@ -26,10 +26,10 @@ export default function CheckInCompletedPanel({
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-              Matching Candidates
+              Gợi ý phù hợp
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-              Nhom goi y sau check-in
+              Nhóm gợi ý sau check-in
             </h3>
           </div>
 
@@ -39,7 +39,7 @@ export default function CheckInCompletedPanel({
               onClick={onDefer}
               className="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Để sau
+              Để sau
             </button>
           </div>
         </div>

@@ -14,10 +14,10 @@ function getRoomInitials(room: Room): string {
 
 export default function RoomSidebar({ rooms, activeRoomId, onSelectRoom }: RoomSidebarProps) {
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col gap-2 rounded-[2rem] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+    <aside className="flex h-full shrink-0 flex-col gap-2 rounded-[2rem] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
       <div className="flex items-center justify-between px-2 pb-2">
         <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">
-          Nhom cua toi
+          Nhóm của tôi
         </h2>
         <button className="flex size-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700">
           <Plus className="size-3.5" />
