@@ -7,13 +7,13 @@ export default function AuthSocialButtons() {
   }
 
   return (
-    <div className="mt-10 sm:grid-cols-2">
+    <div className="mt-7 sm:grid-cols-2">
       <button
         onClick={handleGoogleLogin}
-        className="w-full flex h-[50px] items-center justify-center gap-4 rounded-full bg-white px-6 text-xl font-medium text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5"
+        className="flex h-11 w-full items-center justify-center gap-3 rounded-full bg-white px-5 text-base font-medium text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5"
       >
-        <span className="flex size-9 items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold">
-          <img src={ggIcon} alt="Google" className="size-5" />
+        <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold">
+          <img src={ggIcon} alt="Google" className="size-4" />
         </span>
         Google
       </button>

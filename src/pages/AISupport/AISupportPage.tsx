@@ -45,9 +45,9 @@ const timeFormatter = new Intl.DateTimeFormat('vi-VN', {
 
 const stagePlaceholders: Record<CheckInStage, string> = {
   idle: '',
-  emotion: 'Mo ta cam xuc hien tai cua ban...',
-  issue: 'Dieu gi dang lam ban nang long nhat luc nay...',
-  deepdive: 'Ke them dieu ban nghi la quan trong nhat...',
+  emotion: 'Mô tả cảm xúc hiện tại của bạn...',
+  issue: 'Điều gì đang làm bạn nặng lòng nhất lúc này...',
+  deepdive: 'Kể thêm điều bạn nghĩ là quan trọng nhất...',
   summary: '',
   completed: '',
 }
@@ -148,6 +148,7 @@ const AISupportPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const requestedSessionId = searchParams.get('sessionId')
+  const shouldStartNewCheckIn = searchParams.get('start') === '1'
 
   const {
     sessionId,
@@ -351,6 +352,11 @@ const AISupportPage = () => {
     const bootstrap = async () => {
       const sessionList = await loadSessions()
 
+      if (shouldStartNewCheckIn) {
+        await handleStartCheckIn()
+        return
+      }
+
       if (!requestedSessionId || !sessionList) {
         return
       }
@@ -366,7 +372,7 @@ const AISupportPage = () => {
     // Intentionally keyed only by the requested session id to avoid re-running on every render
     // when hook functions receive new identities.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestedSessionId])
+  }, [requestedSessionId, shouldStartNewCheckIn])
 
   useEffect(() => {
     if (activeSession && workspaceView === 'checkin') {
@@ -531,7 +537,7 @@ const AISupportPage = () => {
   }
 
   const handleDefer = () => {
-    navigate('/home')
+    void openSession(DRAFT_THREAD_ID)
   }
 
   const renderWorkspace = () => {
@@ -588,10 +594,10 @@ const AISupportPage = () => {
           {isWaitingForSummary ? (
             <div className="rounded-[2rem] border border-sky-100 bg-white px-6 py-5 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
-                Summary in progress
+                Đang tổng hợp nội dung
               </p>
               <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-                He thong dang tong hop noi dung tu cau tra loi cua ban va dua ra tong ket.
+                Hệ thống đang tổng hợp nội dung từ câu trả lời của bạn và đưa ra bản tóm tắt.
               </p>
             </div>
           ) : null}
@@ -615,11 +621,11 @@ const AISupportPage = () => {
           {!hasConversation && !currentSummary && selectedSession ? (
             <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Session Snapshot
+                Trạng thái phiên
               </p>
               <p className="mt-3 text-base leading-7">
-                Session nay dang o trang thai <span className="font-semibold">{selectedSession.status}</span> tai
-                buoc <span className="font-semibold">{selectedSession.currentStep}</span>.
+                Phiên này đang ở trạng thái <span className="font-semibold">{selectedSession.status}</span> tại
+                bước <span className="font-semibold">{selectedSession.currentStep}</span>.
               </p>
             </div>
           ) : null}
@@ -627,12 +633,12 @@ const AISupportPage = () => {
           {result ? (
             <div className="rounded-[2rem] bg-white px-6 py-6 text-slate-600 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Session Completed
+                Phiên đã hoàn tất
               </p>
-              <p className="mt-3 text-base leading-7">Summary da duoc xac nhan.</p>
+              <p className="mt-3 text-base leading-7">Bản tóm tắt đã được xác nhận.</p>
               <div className="mt-4">
                 <div className="rounded-[1.5rem] bg-slate-50 px-4 py-4 text-sm text-slate-700">
-                  {createStatusMessage('Summary da duoc xac nhan.').text}
+                  {createStatusMessage('Bản tóm tắt đã được xác nhận.').text}
                 </div>
               </div>
             </div>

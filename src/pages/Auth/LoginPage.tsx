@@ -42,9 +42,9 @@ export default function LoginPage() {
       footerLinkLabel="Create your account"
       footerLinkTo="/register"
     >
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
@@ -52,7 +52,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500"
+            className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
           >
             Email Address
           </label>
@@ -63,7 +63,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            className="mt-3 h-[50px] w-full rounded-2xl border border-white/60 bg-white px-7 text-xl text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.05)] outline-none placeholder:text-slate-400 focus:border-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2.5 h-11 w-full rounded-xl border border-white/60 bg-white px-5 text-base text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.05)] outline-none placeholder:text-slate-400 focus:border-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
@@ -71,19 +71,19 @@ export default function LoginPage() {
           <div className="flex items-center justify-between gap-4">
             <label
               htmlFor="password"
-              className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500"
+              className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
             >
               Password
             </label>
             <button
               type="button"
-              className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-800 hover:text-sky-900"
+              className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-800 hover:text-sky-900"
             >
               Forgot?
             </button>
           </div>
 
-          <div className="relative mt-3">
+          <div className="relative mt-2.5">
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
@@ -91,15 +91,15 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="h-[50px] w-full rounded-2xl border border-white/60 bg-white px-7 pr-16 text-xl text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.05)] outline-none placeholder:text-slate-400 focus:border-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 w-full rounded-xl border border-white/60 bg-white px-5 pr-14 text-base text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.05)] outline-none placeholder:text-slate-400 focus:border-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               disabled={loading}
-              className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {showPassword ? <EyeOff className="size-6" /> : <Eye className="size-6" />}
+              {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </button>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="flex h-[50px] w-full items-center justify-center rounded-full bg-sky-800 text-2xl font-semibold text-white shadow-[0_24px_50px_rgba(14,116,144,0.22)] transition hover:-translate-y-0.5 hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:bg-sky-800"
+          className="flex h-11 w-full items-center justify-center rounded-full bg-sky-800 text-base font-semibold text-white shadow-[0_24px_50px_rgba(14,116,144,0.22)] transition hover:-translate-y-0.5 hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:bg-sky-800"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>

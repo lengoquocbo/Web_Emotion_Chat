@@ -41,7 +41,7 @@ export default function MatchingQueuePanel({
         />
       ) : (
         <div className="rounded-[2rem] bg-white px-6 py-6 shadow-[0_22px_48px_rgba(15,23,42,0.08)]">
-          <p className="text-sm text-slate-500">Dang tai trang thai matching queue...</p>
+          <p className="text-sm text-slate-500">Đang tải trạng thái hàng chờ ghép nhóm...</p>
         </div>
       )}
 
@@ -53,20 +53,20 @@ export default function MatchingQueuePanel({
 
       {contextLoading ? (
         <div className="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500">
-          Dang tai lai du lieu session...
+          Đang tải lại dữ liệu phiên...
         </div>
       ) : null}
 
       {queueState?.requestStatus === MatchingRequestStatus.Cancelled ? (
         <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-          Matching request nay da o trang thai Cancelled.
+          Yêu cầu ghép nhóm này đã ở trạng thái huỷ.
         </div>
       ) : null}
 
       {result && result.candidates.length > 0 ? (
         <section className="rounded-[2rem] bg-white px-6 py-6 shadow-[0_22px_48px_rgba(15,23,42,0.08)]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-            Candidate Preview
+            Xem trước gợi ý
           </p>
           <div className="mt-5">
             <MatchingCandidatesPreview candidates={result.candidates} />

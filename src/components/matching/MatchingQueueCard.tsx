@@ -106,11 +106,10 @@ export default function MatchingQueueCard({
                 Match Success
               </p>
               <p className="mt-2 text-lg font-semibold text-slate-900">
-                Nhom phu hop da san sang cho ban
+                Nhóm phù hợp đã sẵn sàng cho bạn
               </p>
               <p className="mt-2 text-sm leading-7 text-slate-600 md:text-base">
-                Ban da duoc ghep nhom thanh cong. Ban co the vao phong chat ngay bay gio hoac de
-                sau va quay lai bat cu luc nao.
+                Bạn đã được ghép nhóm thành công. Bạn có thể vào phòng chat ngay bây giờ hoặc để sau và quay lại bất cứ lúc nào.
               </p>
             </div>
           </div>

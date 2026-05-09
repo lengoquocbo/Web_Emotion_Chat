@@ -113,18 +113,18 @@ export default function NotificationsPage() {
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notification) => {
       const matchesRead = readFilter === 'all' ? true : !notification.isRead
-      const matchesType = typeFilter === 'all' ? true : notification.Type === typeFilter
+      const matchesType = typeFilter === 'all' ? true : notification.type === typeFilter
       return matchesRead && matchesType
     })
   }, [notifications, readFilter, typeFilter])
 
   const markNotificationAsRead = async (notification: NotificationDto) => {
-    if (notification.isRead || markingId === notification.Id) return
+    if (notification.isRead || markingId === notification.id) return
 
-    setMarkingId(notification.Id)
+    setMarkingId(notification.id)
     setNotifications((current) =>
       current.map((item) =>
-        item.Id === notification.Id
+        item.id === notification.id
           ? {
               ...item,
               isRead: true,
@@ -134,12 +134,12 @@ export default function NotificationsPage() {
       ),
     )
 
-    const result = await notificationService.MarkAsRead(notification.Id)
+    const result = await notificationService.MarkAsRead(notification.id)
 
     if (!result.success) {
       setNotifications((current) =>
         current.map((item) =>
-          item.Id === notification.Id
+          item.id === notification.id
             ? {
                 ...item,
                 isRead: notification.isRead,
@@ -150,7 +150,7 @@ export default function NotificationsPage() {
       )
     }
 
-    setMarkingId(null)
+    setMarkingId((current) => (current === notification.id ? null : current))
   }
 
   const handleNotificationClick = async (notification: NotificationDto) => {
@@ -267,11 +267,11 @@ export default function NotificationsPage() {
         ) : (
           <div className="mt-5 space-y-2.5">
             {filteredNotifications.map((notification) => {
-              const toneClassName = getNotificationToneClass(notification.Type)
+              const toneClassName = getNotificationToneClass(notification.type)
 
               return (
                 <article
-                  key={notification.Id}
+                  key={notification.id}
                   onClick={() => void handleNotificationClick(notification)}
                   className={`cursor-pointer rounded-[1.35rem] px-4 py-3.5 transition shadow-[inset_0_0_0_1px_rgba(226,232,240,0.75)] ${
                     notification.isRead
@@ -285,7 +285,7 @@ export default function NotificationsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${toneClassName}`}>
-                              {formatNotificationType(notification.Type)}
+                              {formatNotificationType(notification.type)}
                             </span>
                             {!notification.isRead ? (
                               <span className="inline-flex size-2 rounded-full bg-sky-500" />
@@ -311,7 +311,7 @@ export default function NotificationsPage() {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {!notification.isRead ? (
                           <span className="text-[11px] font-medium text-slate-400">
-                            {markingId === notification.Id ? 'Marking as read...' : 'Tap card to mark as read'}
+                            {markingId === notification.id ? 'Marking as read...' : 'Tap card to mark as read'}
                           </span>
                         ) : null}
                       </div>

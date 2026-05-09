@@ -25,6 +25,7 @@ export type AuthUser = {
   phone?: string;
   avatarUrl?: string
   Bio?: string
+  bio?: string
 }
 
 export interface UpdateProfileRequest {
@@ -32,4 +33,3 @@ export interface UpdateProfileRequest {
   bio? : string
   avatarUrl?: string
 }
-

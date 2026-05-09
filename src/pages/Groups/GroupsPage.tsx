@@ -1,66 +1,106 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { getMyRooms } from '@/services/roomService'
+import { useNavigate } from 'react-router-dom'
+import { getMyRooms, updateRoomName } from '@/services/roomService'
+import { ReflectionService } from '@/services/reflectionService'
 import { useChat } from '@/hooks/chat/Usechat'
 import { useSignalR } from '@/hooks/chat/Usesignalr'
+import { useAuth } from '@/hooks/auth/useAuth'
 import { invokeHub } from '@/services/signalRService'
 import { toastStore } from '@/stores/toastStore'
 import { ChatEvents, ChatMethods } from '@/types/Signalr.events'
-import type { Room, Message } from '@/types/Chat'
+import type { Message, Room, RoomMember } from '@/types/Chat'
+import type { ReflectionDto } from '@/types/reflection'
 import GroupComposer from '@/components/groups/GroupComposer'
 import GroupHeader from '@/components/groups/GroupHeader'
 import GroupMembersPanel from '@/components/groups/GroupMembersPanel'
+import GroupReflectionPanel from '@/components/groups/GroupReflectionPanel'
+import GroupRenameRoomDialog from '@/components/groups/GroupRenameRoomDialog'
 import GroupThread from '@/components/groups/GroupThread'
 import RoomSidebar from '@/components/groups/RoomSider'
 import ToastContainer from '@/components/ui/ToastContainer'
 
 export default function GroupsPage() {
-  const [rooms, setRooms]           = useState<Room[]>([])
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const [rooms, setRooms] = useState<Room[]>([])
   const [activeRoom, setActiveRoom] = useState<Room | null>(null)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
-  const [error, setError]           = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isReflectionOpen, setIsReflectionOpen] = useState(false)
+  const [activeReflection, setActiveReflection] = useState<ReflectionDto | null>(null)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [isRenameOpen, setIsRenameOpen] = useState(false)
+  const [isSavingRoomName, setIsSavingRoomName] = useState(false)
+  const [renameError, setRenameError] = useState<string | null>(null)
 
   const activeRoomIdRef = useRef<string | null>(null)
-  const roomsRef        = useRef<Room[]>([])
+  const roomsRef = useRef<Room[]>([])
   activeRoomIdRef.current = activeRoom?.id ?? null
-  roomsRef.current        = rooms
+  roomsRef.current = rooms
 
   const chat = useChat({ roomId: activeRoom?.id ?? '' })
   const { connection } = useSignalR('/hubs/chat')
 
-  // ── Fetch rooms ────────────────────────────────────────────────────────────
   useEffect(() => {
     getMyRooms('Matching')
-      .then(data => {
+      .then((data) => {
         setRooms(data)
         if (data.length > 0) setActiveRoom(data[0])
       })
-      .catch(err => setError(err?.response?.data?.message ?? 'Không thể tải nhóm'))
+      .catch((err) => setError(err?.response?.data?.message ?? 'Không thể tải nhóm'))
       .finally(() => setIsLoadingRooms(false))
   }, [])
 
-  // ── Join tất cả rooms để nhận toast từ mọi room ───────────────────────────
+  useEffect(() => {
+    if (!activeRoom?.id) {
+      setActiveReflection(null)
+      return
+    }
+
+    let cancelled = false
+
+    const loadReflection = async () => {
+      const result = await ReflectionService.GetMineByRoomId(activeRoom.id)
+
+      if (cancelled) return
+
+      if (!result.success || !result.data) {
+        setActiveReflection(null)
+        return
+      }
+
+      setActiveReflection(result.data)
+    }
+
+    void loadReflection()
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeRoom?.id])
+
   useEffect(() => {
     if (!connection || rooms.length === 0) return
-    rooms.forEach(room => {
+    rooms.forEach((room) => {
       invokeHub(connection, ChatMethods.JoinRoom, room.id).catch(() => {})
     })
   }, [connection, rooms])
 
-  // ── Toast khi nhận tin từ room không active ────────────────────────────────
   useEffect(() => {
     if (!connection) return
 
     const handleReceive = (message: Message) => {
       if (message.roomId === activeRoomIdRef.current) return
-      const room = roomsRef.current.find(r => r.id === message.roomId)
+      const room = roomsRef.current.find((item) => item.id === message.roomId)
       if (!room) return
 
       toastStore.add({
-        roomId:     message.roomId,
-        roomName:   room.name ?? `Room #${room.id.slice(0, 6)}`,
+        roomId: message.roomId,
+        roomName: room.name ?? `Room #${room.id.slice(0, 6)}`,
         senderName: message.senderDisplayName || message.senderUsername,
-        content:    message.content,
+        content: message.content,
       })
     }
 
@@ -69,48 +109,111 @@ export default function GroupsPage() {
   }, [connection])
 
   const handleToastRoomSelect = (roomId: string) => {
-    const room = rooms.find(r => r.id === roomId)
-    if (room) setActiveRoom(room)
+    const nextRoom = rooms.find((item) => item.id === roomId)
+    if (!nextRoom) return
+
+    setIsReflectionOpen(false)
+    setIsMembersOpen(false)
+    setIsRenameOpen(false)
+    setActiveRoom(nextRoom)
   }
 
-  // ── States ─────────────────────────────────────────────────────────────────
-  if (isLoadingRooms) return (
-    <section className="flex h-screen items-center justify-center">
-      <Loader2 className="size-7 animate-spin text-slate-300" />
-    </section>
-  )
+  const handleSelectRoom = (room: Room) => {
+    setIsReflectionOpen(false)
+    setIsMembersOpen(false)
+    setIsRenameOpen(false)
+    setActiveRoom(room)
+  }
 
-  if (error) return (
-    <section className="flex h-screen items-center justify-center">
-      <p className="text-rose-400">{error}</p>
-    </section>
-  )
+  const handleSelectMember = (member: RoomMember) => {
+    setIsMembersOpen(false)
 
-  if (!activeRoom) return (
-    <section className="flex h-screen items-center justify-center">
-      <p className="text-slate-400">Bạn chưa tham gia nhóm nào.</p>
-    </section>
-  )
+    if (member.userId === user?.id) {
+      navigate('/profile')
+      return
+    }
+
+    navigate(`/people/${member.userId}`)
+  }
+
+  const handleRenameRoom = async (nextName: string) => {
+    if (!activeRoom) return
+
+    setIsSavingRoomName(true)
+    setRenameError(null)
+
+    const result = await updateRoomName(activeRoom.id, nextName)
+
+    if (!result.success || !result.data) {
+      setRenameError(result.message ?? 'Không thể cập nhật tên nhóm lúc này.')
+      setIsSavingRoomName(false)
+      return
+    }
+
+    const updatedRoom = result.data
+    setRooms((prev) => prev.map((room) => (room.id === updatedRoom.id ? updatedRoom : room)))
+    setActiveRoom(updatedRoom)
+    setIsSavingRoomName(false)
+    setIsRenameOpen(false)
+  }
+
+  if (isLoadingRooms) {
+    return (
+      <section className="flex h-screen items-center justify-center">
+        <Loader2 className="size-7 animate-spin text-slate-300" />
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="flex h-screen items-center justify-center">
+        <p className="text-rose-400">{error}</p>
+      </section>
+    )
+  }
+
+  if (!activeRoom) {
+    return (
+      <section className="flex h-screen items-center justify-center">
+        <p className="text-slate-400">Bạn chưa tham gia nhóm nào.</p>
+      </section>
+    )
+  }
 
   return (
-    <section className="flex h-screen gap-4 overflow-hidden">
+    <section className="relative grid h-screen gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px]">
+      
 
-      {/* ── Cột 1: Room sidebar ── */}
-      <RoomSidebar
-        rooms={rooms}
-        activeRoomId={activeRoom.id}
-        onSelectRoom={setActiveRoom}
-      />
-
-      {/* ── Cột 2: Chat area ── */}
-      <div className="min-w-0 flex-1 flex flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
         <div className="shrink-0">
           <GroupHeader
             room={activeRoom}
             rooms={rooms}
-            onSelectRoom={setActiveRoom}
+            onSelectRoom={handleSelectRoom}
+            onOpenReflection={() => setIsReflectionOpen(true)}
+            hasReflection={!!activeReflection}
+            onOpenMembers={() => setIsMembersOpen(true)}
+            onOpenRename={() => {
+              setRenameError(null)
+              setIsRenameOpen(true)
+            }}
           />
         </div>
+
+        {isReflectionOpen && (
+          <div className="shrink-0">
+            <GroupReflectionPanel
+              room={activeRoom}
+              initialReflection={activeReflection}
+              onClose={() => setIsReflectionOpen(false)}
+              onSaved={(reflection) => {
+                setActiveReflection(reflection)
+                setIsReflectionOpen(false)
+              }}
+            />
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <GroupThread
@@ -132,10 +235,31 @@ export default function GroupsPage() {
         </div>
       </div>
 
-      {/* ── Cột 3: Members panel ── */}
-      <div className="app-scrollbar w-64 shrink-0 overflow-y-auto">
-        <GroupMembersPanel room={activeRoom} />
-      </div>
+      <GroupRenameRoomDialog
+        currentName={activeRoom.name ?? ''}
+        isOpen={isRenameOpen}
+        isSaving={isSavingRoomName}
+        error={renameError}
+        onClose={() => {
+          if (isSavingRoomName) return
+          setRenameError(null)
+          setIsRenameOpen(false)
+        }}
+        onSubmit={handleRenameRoom}
+      />
+
+      <GroupMembersPanel
+        room={activeRoom}
+        isOpen={isMembersOpen}
+        onClose={() => setIsMembersOpen(false)}
+        onSelectMember={handleSelectMember}
+      />
+
+      <RoomSidebar
+        rooms={rooms}
+        activeRoomId={activeRoom.id}
+        onSelectRoom={handleSelectRoom}
+      />
 
       <ToastContainer onRoomSelect={handleToastRoomSelect} />
     </section>

@@ -7,6 +7,7 @@ type Story = {
   initials: string
   meta: string
   avatarTone: string
+  avatarUrl?: string | null
   content?: string
   quote?: string
   image?: boolean
@@ -27,9 +28,13 @@ export default function StoryCard({ story }: StoryCardProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
-            className={`flex size-12 items-center justify-center rounded-full bg-gradient-to-br ${story.avatarTone} text-sm font-semibold text-slate-700`}
+            className={`flex size-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${story.avatarTone} text-sm font-semibold text-slate-700`}
           >
-            {story.initials}
+            {story.avatarUrl ? (
+              <img src={story.avatarUrl} alt={story.author} className="size-full object-cover" />
+            ) : (
+              story.initials
+            )}
           </div>
           <div>
             <h3 className="font-semibold text-slate-800">{story.author}</h3>
