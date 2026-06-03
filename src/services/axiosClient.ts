@@ -4,21 +4,25 @@ type RetriableAxiosRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || '/'
+
 const axiosClient = axios.create({
-  baseURL: '/',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 })
 
 const refreshClient = axios.create({
-  baseURL: '/',
+  baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 })
 

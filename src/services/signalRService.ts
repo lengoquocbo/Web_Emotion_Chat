@@ -9,6 +9,7 @@ import {
 
 // Timeout chờ trước mỗi lần retry (ms): 0s, 2s, 5s, 10s, rồi null = dừng
 const RETRY_DELAYS = [0, 2_000, 5_000, 10_000]
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || ''
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 // Tạo một HubConnection mới. Mỗi hub (chat / presence) gọi hàm này riêng.
@@ -18,9 +19,12 @@ const RETRY_DELAYS = [0, 2_000, 5_000, 10_000]
 
 export function createHubConnection(hubPath: '/hubs/chat' | '/hubs/presence'): HubConnection {
   return new HubConnectionBuilder()
-    .withUrl(hubPath, {
+    .withUrl(`${API_BASE_URL}${hubPath}`, {
       // withCredentials: true để cookie "token" được gửi khi negotiate qua HTTP
       withCredentials: true,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
     })
     .withAutomaticReconnect(RETRY_DELAYS)
     .configureLogging(

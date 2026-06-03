@@ -1,13 +1,17 @@
-import { defineConfig } from "vite"
+import { defineConfig, loadEnv } from "vite"
 import react from "@vitejs/plugin-react"
 import { fileURLToPath, URL } from "node:url"
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiTarget = env.VITE_PROXY_TARGET || 'https://localhost:7138'
+
+  return {
   server: {
     port: 5174,
     proxy: {
       '/api': {
-        target: 'https://localhost:7138',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
         cookieDomainRewrite: {
@@ -24,7 +28,7 @@ export default defineConfig({
         },
       },
       '/hubs': {
-        target: 'https://localhost:7138',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
         ws: true,
@@ -44,7 +48,7 @@ export default defineConfig({
       // Static files: ảnh và file upload được serve từ wwwroot/uploads/
       // Không cần cookie nên config đơn giản hơn
       '/uploads': {
-        target: 'https://localhost:7138',
+        target: apiTarget,
         changeOrigin: true,
         secure: false,
       },
@@ -56,4 +60,5 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  }
 })
