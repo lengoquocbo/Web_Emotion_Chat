@@ -13,6 +13,8 @@ function normalizeAuthUser(payload: any): AuthUser {
     avatarUrl: payload?.avatarUrl,
     Bio: payload?.Bio ?? payload?.bio ?? '',
     bio: payload?.bio ?? payload?.Bio ?? '',
+    role: payload?.role ?? 'User',
+
   }
 }
 

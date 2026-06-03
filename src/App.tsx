@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+﻿import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import HomePage from './pages/Home/HomePage'
 import GroupsPage from './pages/Groups/GroupsPage'
@@ -13,7 +13,9 @@ import LoginPage from './pages/Auth/LoginPage'
 import RegisterPage from './pages/Auth/RegisterPage'
 import ServerStatusPage from './pages/ServerStatus/ServerStatusPage'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import AdminRoute from './components/auth/AdminRoute'
 import GoogleCallback from './pages/Auth/GoogleCallback'
+import AdminPage from './pages/Admin/AdminPage'
 
 const App = () => (
   <BrowserRouter>
@@ -24,6 +26,7 @@ const App = () => (
       <Route path="/server-status" element={<ServerStatusPage />} />
       <Route path="/auth/callback" element={<GoogleCallback />} />
 
+      {/* Protected User Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/home" element={<HomePage />} />
@@ -34,6 +37,13 @@ const App = () => (
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/people/:userId" element={<OtherUserProfilePage />} />
+        </Route>
+      </Route>
+
+      {/* Admin Routes */}
+      <Route element={<AdminRoute />}>
+        <Route element={<AppLayout />}>
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Route>
     </Routes>

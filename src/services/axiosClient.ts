@@ -24,6 +24,20 @@ const refreshClient = axios.create({
 
 let refreshPromise: Promise<void> | null = null
 
+function getDeviceId() {
+  const key = 'emotion_connect_device_id'
+  const existing = localStorage.getItem(key)
+
+  if (existing) {
+    return existing
+  }
+
+  const next = crypto.randomUUID()
+  localStorage.setItem(key, next)
+
+  return next
+}
+
 function isLoginPage() {
   return window.location.pathname === '/login'
 }
@@ -67,6 +81,16 @@ async function refreshToken() {
 
   return refreshPromise
 }
+
+axiosClient.interceptors.request.use((config) => {
+  config.headers['X-Device-Id'] = getDeviceId()
+  return config
+})
+
+refreshClient.interceptors.request.use((config) => {
+  config.headers['X-Device-Id'] = getDeviceId()
+  return config
+})
 
 axiosClient.interceptors.response.use(
   (response) => response,

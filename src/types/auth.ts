@@ -23,9 +23,10 @@ export type AuthUser = {
   email: string;
   displayName?: string;
   phone?: string;
-  avatarUrl?: string
-  Bio?: string
-  bio?: string
+  avatarUrl?: string;
+  Bio?: string;
+  bio?: string;
+  role?: 'User'| 'Admin';
 }
 
 export interface UpdateProfileRequest {

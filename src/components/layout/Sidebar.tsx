@@ -4,6 +4,7 @@ import {
   Bot,
   Bell,
   ChevronRight,
+  ShieldCheck,
   Home,
   LogOut,
   MessageCircleMore,
@@ -25,11 +26,12 @@ const navItems = [
   { label: 'Analytics', path: '/analytics', icon: BarChart2 },
   { label: 'Notifications', path: '/notifications', icon: Bell },
   { label: 'Profile', path: '/profile', icon: User },
+  { label: 'Admin', path: '/admin', icon: ShieldCheck },
 ]
 
 const Sidebar = () => {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
 
   const handleLogout = async () => {
     try {
@@ -61,7 +63,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="app-scrollbar flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
-        {navItems.map(({ label, path, icon: Icon }) => (
+        {navItems.filter((item) => item.path !== '/admin' || user?.role === 'Admin').map(({ label, path, icon: Icon }) => (
           <NavLink key={path} to={path} className="shrink-0 lg:w-full">
             {({ isActive }) => (
               <Button
