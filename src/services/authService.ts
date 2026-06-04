@@ -101,5 +101,6 @@ export const LogoutService = async (): Promise<void> => {
 }
 
 export const getGoogleLoginUrl = (): string => {
-  return '/api/Auth/google-login'
+  const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, '') || ''
+  return `${apiBaseUrl}/api/Auth/google-login`
 }
