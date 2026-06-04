@@ -13,7 +13,8 @@ import { achievementService } from '@/services/achievementService'
 import type { AchievementCategory, UserAchievementDto } from '@/types/achievement'
 
 type ProfileAchievementsCardProps = {
-  mode?: 'self' | 'placeholder'
+  userId?: string
+  title?: string
 }
 
 const categoryMeta: Record<
@@ -76,23 +77,21 @@ function formatCategoryLabel(category: AchievementCategory) {
 }
 
 export default function ProfileAchievementsCard({
-  mode = 'self',
+  userId,
+  title = 'Your milestone gallery',
 }: ProfileAchievementsCardProps) {
   const [achievements, setAchievements] = useState<UserAchievementDto[]>([])
-  const [loading, setLoading] = useState(mode === 'self')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (mode !== 'self') {
-      setLoading(false)
-      return
-    }
-
     const loadAchievements = async () => {
       setLoading(true)
       setError(null)
 
-      const result = await achievementService.GetMyAchievements()
+      const result = userId
+        ? await achievementService.GetUserAchievements(userId)
+        : await achievementService.GetMyAchievements()
 
       if (!result.success || !result.data) {
         setError(result.message ?? 'Unable to load achievements right now.')
@@ -106,7 +105,7 @@ export default function ProfileAchievementsCard({
     }
 
     void loadAchievements()
-  }, [mode])
+  }, [userId])
 
   const featuredAchievements = useMemo(() => {
     return [...achievements]
@@ -128,18 +127,11 @@ export default function ProfileAchievementsCard({
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700/75">Achievements</p>
-          <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-800">Your milestone gallery</h3>
+          <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-800">{title}</h3>
         </div>
       </div>
 
-      {mode !== 'self' ? (
-        <div className="mt-5 rounded-[1.75rem] border border-dashed border-slate-200 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(255,255,255,0.98))] px-6 py-8 text-center">
-          <p className="text-base font-medium text-slate-700">Achievements will appear here soon.</p>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            This space is reserved for streak badges, support milestones, and future profile highlights.
-          </p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="mt-5 rounded-[1.75rem] bg-slate-50 px-6 py-8 text-center text-sm text-slate-500">
           Loading achievements...
         </div>

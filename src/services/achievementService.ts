@@ -6,7 +6,7 @@ import { mapAxiosErrorToServiceResult } from "./serviceResult"
 export const achievementService = {
     GetAllAchievements : async() : Promise<ServiceResult<AchievementDto[]>> => {
         try {
-            const response = await axiosClient.get<AchievementDto[]>('/api/Friendship')
+            const response = await axiosClient.get<AchievementDto[]>('/api/Achievement')
             return ServiceResult.ok(response.data, response.status)
         } catch (error) {
             return mapAxiosErrorToServiceResult<AchievementDto[]>(error, 'Loi khi lay danh sach achievement')
@@ -22,6 +22,18 @@ export const achievementService = {
                 error, 
                 'Lỗi khi lấy danh sách thành tựu'
             );
+        }
+    },
+
+    GetUserAchievements: async (userId: string): Promise<ServiceResult<UserAchievementDto[]>> => {
+        try {
+            const response = await axiosClient.get<UserAchievementDto[]>(`/api/Achievement/users/${userId}`)
+            return ServiceResult.ok(response.data, response.status)
+        } catch (error) {
+            return mapAxiosErrorToServiceResult<UserAchievementDto[]>(
+                error,
+                'Loi khi lay danh sach thanh tuu cua nguoi dung'
+            )
         }
     },
 

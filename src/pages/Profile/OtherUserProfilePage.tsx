@@ -339,7 +339,10 @@ export default function OtherUserProfilePage() {
         <div className="rounded-[1.5rem] bg-rose-50 px-5 py-4 text-sm text-rose-700">{error}</div>
       ) : null}
 
-      <ProfileAchievementsCard mode="placeholder" />
+      <ProfileAchievementsCard
+        userId={userId}
+        title={`${profileName}'s milestone gallery`}
+      />
     </div>
   )
 }
