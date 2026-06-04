@@ -35,7 +35,7 @@ export default function RoomSidebar({ rooms, activeRoomId, onSelectRoom }: RoomS
             <button
               key={room.id}
               onClick={() => onSelectRoom(room)}
-              className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${
+              className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${
                 isActive
                   ? 'bg-sky-50 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.2)]'
                   : 'hover:bg-slate-50'
