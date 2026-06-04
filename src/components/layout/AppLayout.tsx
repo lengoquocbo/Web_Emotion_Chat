@@ -10,7 +10,7 @@ const AppLayout = () => (
       max-w-[auto]
       flex-col
       gap-4
-      overflow-hidden
+      overflow-x-hidden
       border
       border-white/10
       bg-[linear-gradient(180deg,#f8fbff_0%,#f7f9fc_100%)]
@@ -22,7 +22,7 @@ const AppLayout = () => (
     "
   >
     <Sidebar />
-    <main className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-[2rem] bg-transparent p-2">
+    <main className="app-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden rounded-[2rem] bg-transparent p-2">
       <Outlet />
     </main>
   </div>
