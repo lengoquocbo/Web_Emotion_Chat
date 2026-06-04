@@ -182,57 +182,63 @@ export default function GroupsPage() {
   }
 
   return (
-    <section className="relative grid h-full min-h-0 gap-4 overflow-hidden bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      
-
-      <div className="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-3 overflow-hidden">
-        <div className="shrink-0">
-          <GroupHeader
-            room={activeRoom}
-            rooms={rooms}
-            onSelectRoom={handleSelectRoom}
-            onOpenReflection={() => setIsReflectionOpen(true)}
-            hasReflection={!!activeReflection}
-            onOpenMembers={() => setIsMembersOpen(true)}
-            onOpenRename={() => {
-              setRenameError(null)
-              setIsRenameOpen(true)
-            }}
-          />
-        </div>
-
-        {isReflectionOpen && (
+    <section className="h-full min-h-0 overflow-hidden">
+      <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <main className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[2rem] bg-white/92 p-5">
           <div className="shrink-0">
-            <GroupReflectionPanel
+            <GroupHeader
               room={activeRoom}
-              initialReflection={activeReflection}
-              onClose={() => setIsReflectionOpen(false)}
-              onSaved={(reflection) => {
-                setActiveReflection(reflection)
-                setIsReflectionOpen(false)
+              rooms={rooms}
+              onSelectRoom={handleSelectRoom}
+              onOpenReflection={() => setIsReflectionOpen(true)}
+              hasReflection={!!activeReflection}
+              onOpenMembers={() => setIsMembersOpen(true)}
+              onOpenRename={() => {
+                setRenameError(null)
+                setIsRenameOpen(true)
               }}
             />
           </div>
-        )}
 
-        <div className="min-h-0 overflow-hidden">
-          <GroupThread
-            roomId={activeRoom.id}
-            messages={chat.messages}
-            isLoading={chat.isLoading}
-            isLoadingMore={chat.isLoadingMore}
-            hasMore={chat.hasMore}
-            onLoadMore={chat.loadMore}
-          />
-        </div>
+          {isReflectionOpen && (
+            <div className="mt-3 shrink-0">
+              <GroupReflectionPanel
+                room={activeRoom}
+                initialReflection={activeReflection}
+                onClose={() => setIsReflectionOpen(false)}
+                onSaved={(reflection) => {
+                  setActiveReflection(reflection)
+                  setIsReflectionOpen(false)
+                }}
+              />
+            </div>
+          )}
 
-        <div className="shrink-0">
-          <GroupComposer
-            onSend={chat.sendMessage}
-            isSending={chat.isSending}
-            status={chat.status}
-          />
-        </div>
+          <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/92">
+            <GroupThread
+              roomId={activeRoom.id}
+              messages={chat.messages}
+              isLoading={chat.isLoading}
+              isLoadingMore={chat.isLoadingMore}
+              hasMore={chat.hasMore}
+              onLoadMore={chat.loadMore}
+            />
+          </div>
+
+          <div className="mt-4 shrink-0">
+            <GroupComposer
+              onSend={chat.sendMessage}
+              isSending={chat.isSending}
+              status={chat.status}
+            />
+          </div>
+        </main>
+
+        <RoomSidebar
+          rooms={rooms}
+          activeRoomId={activeRoom.id}
+          onSelectRoom={handleSelectRoom}
+        />
       </div>
 
       <GroupRenameRoomDialog
@@ -253,12 +259,6 @@ export default function GroupsPage() {
         isOpen={isMembersOpen}
         onClose={() => setIsMembersOpen(false)}
         onSelectMember={handleSelectMember}
-      />
-
-      <RoomSidebar
-        rooms={rooms}
-        activeRoomId={activeRoom.id}
-        onSelectRoom={handleSelectRoom}
       />
 
       <ToastContainer onRoomSelect={handleToastRoomSelect} />

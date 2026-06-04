@@ -154,8 +154,8 @@ export default function GroupComposer({ onSend, isSending, status }: GroupCompos
         </div>
       )}
 
-      <div className="flex items-center gap-2 rounded-full bg-white px-2 py-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
-        <div className="flex min-h-[58px] flex-1 items-center gap-3 rounded-full bg-white px-4 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
+      <div className="flex items-center gap-2 rounded-full bg-white px-2 py-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+        <div className="flex min-h-[52px] flex-1 items-center gap-3 rounded-full bg-white px-4 py-2.5 shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
           <button
             type="button"
             title="Gửi ảnh"
@@ -197,7 +197,7 @@ export default function GroupComposer({ onSend, isSending, status }: GroupCompos
         <button
           onClick={handleSend}
           disabled={(!text.trim() && !pending) || isBusy || isDisconnected}
-          className="flex size-12 items-center justify-center rounded-full bg-sky-800 text-white shadow-[0_14px_28px_rgba(3,105,161,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex size-11 items-center justify-center rounded-full bg-sky-800 text-white shadow-[0_14px_28px_rgba(3,105,161,0.28)] transition hover:-translate-y-0.5 hover:bg-sky-900 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isBusy ? (
             <Loader2 className="size-4 animate-spin" />

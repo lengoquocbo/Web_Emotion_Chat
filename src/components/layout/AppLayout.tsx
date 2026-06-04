@@ -22,7 +22,7 @@ const AppLayout = () => (
     "
   >
     <Sidebar />
-    <main className="h-full min-h-0 min-w-0 flex-1 overflow-hidden rounded-[2rem] bg-transparent p-2">
+    <main className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-[2rem] bg-transparent p-2">
       <Outlet />
     </main>
   </div>
