@@ -3,6 +3,7 @@ import { CheckCheck, Loader2, Download, FileText, ImageIcon, X, ZoomIn } from 'l
 import { useAuth } from '@/hooks/auth/useAuth'
 import { formatFileSize } from '@/services/Uploadservice'
 import type { Message } from '@/types/Chat'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -115,6 +116,7 @@ function Lightbox({ src, alt, fileName, onClose }: LightboxProps) {
 function ImageBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [imgError, setImgError]         = useState(false)
+  const fileUrl = resolveMediaUrl(msg.fileUrl)
 
   return (
     <>
@@ -135,7 +137,7 @@ function ImageBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
             title="Nhấn để phóng to"
           >
             <img
-              src={msg.fileUrl!}
+              src={fileUrl}
               alt={msg.fileName ?? 'Ảnh'}
               loading="lazy"
               className="block max-h-72 max-w-xs object-cover transition-opacity duration-300 group-hover:opacity-90"
@@ -151,9 +153,9 @@ function ImageBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
         )}
 
         {/* Nút download ảnh nằm dưới thumbnail */}
-        {msg.fileUrl && (
+        {fileUrl && (
           <button
-            onClick={() => downloadFile(msg.fileUrl!, msg.fileName ?? 'image')}
+            onClick={() => downloadFile(fileUrl, msg.fileName ?? 'image')}
             className={`flex w-full items-center justify-center gap-2 py-2 text-xs font-medium transition ${
               isSelf
                 ? 'bg-sky-700 text-sky-100 hover:bg-sky-600'
@@ -167,9 +169,9 @@ function ImageBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
       </div>
 
       {/* Lightbox overlay */}
-      {lightboxOpen && msg.fileUrl && (
+      {lightboxOpen && fileUrl && (
         <Lightbox
-          src={msg.fileUrl}
+          src={fileUrl}
           alt={msg.fileName ?? 'Ảnh'}
           fileName={msg.fileName ?? 'image'}
           onClose={() => setLightboxOpen(false)}
@@ -181,6 +183,8 @@ function ImageBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
 
 /** Render bubble file tài liệu — hiện icon + tên file + nút download */
 function FileBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
+  const fileUrl = resolveMediaUrl(msg.fileUrl)
+
   return (
     <div className={`flex items-center gap-3 rounded-[1.5rem] px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)] ${
       isSelf
@@ -205,9 +209,9 @@ function FileBubble({ msg, isSelf }: { msg: Message; isSelf: boolean }) {
       </div>
 
       {/* Nút download — dùng downloadFile() đã fix CORS */}
-      {msg.fileUrl && (
+      {fileUrl && (
         <button
-          onClick={() => downloadFile(msg.fileUrl!, msg.fileName ?? 'file')}
+          onClick={() => downloadFile(fileUrl, msg.fileName ?? 'file')}
           title="Tải file"
           className={`flex size-9 shrink-0 items-center justify-center rounded-full transition ${
             isSelf

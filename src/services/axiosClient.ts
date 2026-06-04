@@ -87,6 +87,10 @@ async function refreshToken() {
 }
 
 axiosClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+
   config.headers['X-Device-Id'] = getDeviceId()
   return config
 })

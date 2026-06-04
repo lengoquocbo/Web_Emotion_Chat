@@ -72,12 +72,6 @@ export const UploadAvatar = async (file: File): Promise<AuthUser> => {
   const response = await axiosClient.post<AuthUser | UserSummaryDto>(
     '/api/Auth/me/avatar',
     formData,
-    {
-      headers: {
-        'Content-Type': undefined as never,
-        Accept: 'application/json',
-      },
-    },
   )
 
   return normalizeAuthUser(response.data)

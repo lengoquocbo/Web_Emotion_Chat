@@ -15,9 +15,7 @@ export async function uploadImage(file: File): Promise<FileUploadResponseDto> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await axiosClient.post<FileUploadResponseDto>('/api/Upload/image', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await axiosClient.post<FileUploadResponseDto>('/api/Upload/image', formData)
 
   return res.data
 }
@@ -30,9 +28,7 @@ export async function uploadFile(file: File): Promise<FileUploadResponseDto> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await axiosClient.post<FileUploadResponseDto>('/api/Upload/file', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await axiosClient.post<FileUploadResponseDto>('/api/Upload/file', formData)
 
   return res.data
 }

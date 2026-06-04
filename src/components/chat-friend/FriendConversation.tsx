@@ -4,6 +4,7 @@ import { CheckCheck, Download, FileText, Loader2, X, ZoomIn } from 'lucide-react
 import { useAuth } from '@/hooks/auth/useAuth'
 import { formatFileSize } from '@/services/Uploadservice'
 import type { Message } from '@/types/Chat'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 
 interface FriendConversationProps {
   roomId: string
@@ -87,6 +88,7 @@ function ImageLightbox({
 function ImageBubble({ message, isSelf }: { message: Message; isSelf: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const fileUrl = resolveMediaUrl(message.fileUrl)
 
   return (
     <>
@@ -104,7 +106,7 @@ function ImageBubble({ message, isSelf }: { message: Message; isSelf: boolean })
             title="Nhấn để phóng to"
           >
             <img
-              src={message.fileUrl ?? ''}
+              src={fileUrl}
               alt={message.fileName ?? 'Ảnh'}
               className="block max-h-60 max-w-[280px] object-cover transition-opacity duration-300 group-hover:opacity-90"
               loading="lazy"
@@ -118,10 +120,10 @@ function ImageBubble({ message, isSelf }: { message: Message; isSelf: boolean })
           </div>
         )}
 
-        {message.fileUrl ? (
+        {fileUrl ? (
           <button
             type="button"
-            onClick={() => downloadFile(message.fileUrl!, message.fileName ?? 'image')}
+            onClick={() => downloadFile(fileUrl, message.fileName ?? 'image')}
             className={`flex w-full items-center justify-center gap-2 py-2 text-[11px] font-medium transition ${
               isSelf
                 ? 'bg-sky-700 text-sky-100 hover:bg-sky-600'
@@ -134,9 +136,9 @@ function ImageBubble({ message, isSelf }: { message: Message; isSelf: boolean })
         ) : null}
       </div>
 
-      {isOpen && message.fileUrl ? (
+      {isOpen && fileUrl ? (
         <ImageLightbox
-          src={message.fileUrl}
+          src={fileUrl}
           alt={message.fileName ?? 'Ảnh'}
           fileName={message.fileName ?? 'image'}
           onClose={() => setIsOpen(false)}
@@ -147,6 +149,8 @@ function ImageBubble({ message, isSelf }: { message: Message; isSelf: boolean })
 }
 
 function FileBubble({ message, isSelf }: { message: Message; isSelf: boolean }) {
+  const fileUrl = resolveMediaUrl(message.fileUrl)
+
   return (
     <div
       className={`flex items-center gap-3 rounded-[1.3rem] px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.05)] ${
@@ -170,10 +174,10 @@ function FileBubble({ message, isSelf }: { message: Message; isSelf: boolean }) 
         ) : null}
       </div>
 
-      {message.fileUrl ? (
+      {fileUrl ? (
         <button
           type="button"
-          onClick={() => downloadFile(message.fileUrl!, message.fileName ?? 'file')}
+          onClick={() => downloadFile(fileUrl, message.fileName ?? 'file')}
           className={`flex size-8 shrink-0 items-center justify-center rounded-full transition ${
             isSelf
               ? 'bg-sky-700 text-sky-100 hover:bg-sky-600'
