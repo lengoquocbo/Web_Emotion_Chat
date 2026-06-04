@@ -182,7 +182,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <section className="relative grid h-screen min-h-0 gap-4 overflow-hidden bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <section className="relative grid h-full min-h-0 gap-4 overflow-hidden bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       
 
       <div className="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-3 overflow-hidden">

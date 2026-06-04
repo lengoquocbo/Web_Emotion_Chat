@@ -14,7 +14,7 @@ function getRoomInitials(room: Room): string {
 
 export default function RoomSidebar({ rooms, activeRoomId, onSelectRoom }: RoomSidebarProps) {
   return (
-    <aside className="flex h-full shrink-0 flex-col gap-2 rounded-[2rem] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+    <aside className="flex h-full min-h-0 shrink-0 flex-col gap-2 overflow-hidden rounded-[2rem] bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
       <div className="flex items-center justify-between px-2 pb-2">
         <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">
           Nhóm của tôi
@@ -24,7 +24,7 @@ export default function RoomSidebar({ rooms, activeRoomId, onSelectRoom }: RoomS
         </button>
       </div>
 
-      <div className="app-scrollbar flex flex-col gap-1 overflow-y-auto">
+      <div className="app-scrollbar min-h-0 flex-1 overflow-y-auto">
         {rooms.map((room) => {
           const isActive = room.id === activeRoomId
           const name = room.name ?? `Room #${room.id.slice(0, 6)}`
