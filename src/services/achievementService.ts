@@ -27,7 +27,7 @@ export const achievementService = {
 
     GetUserAchievements: async (userId: string): Promise<ServiceResult<UserAchievementDto[]>> => {
         try {
-            const response = await axiosClient.get<UserAchievementDto[]>(`/api/Achievement/users/${userId}`)
+            const response = await axiosClient.get<UserAchievementDto[]>(`/api/Achievement/users/${userId}/achievements`)
             return ServiceResult.ok(response.data, response.status)
         } catch (error) {
             return mapAxiosErrorToServiceResult<UserAchievementDto[]>(
