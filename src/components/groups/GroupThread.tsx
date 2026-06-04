@@ -300,7 +300,7 @@ export default function GroupThread({
 
   // ── Loading state ────────────────────────────────────────────────────────
   if (isLoading) return (
-    <section className="flex h-full items-center justify-center rounded-[2rem] bg-white">
+    <section className="flex h-full min-h-0 items-center justify-center rounded-[2rem] bg-white">
       <div className="flex flex-col items-center gap-3 text-slate-400">
         <Loader2 className="size-8 animate-spin" />
         <p className="text-sm">Đang tải tin nhắn...</p>
@@ -312,7 +312,7 @@ export default function GroupThread({
     <section
       ref={containerRef}
       onScroll={handleScroll}
-      className="app-scrollbar h-full overflow-y-auto rounded-[2rem] bg-white px-4 py-6 sm:px-6"
+      className="app-scrollbar h-full min-h-0 overflow-y-auto rounded-[2rem] bg-white px-4 py-6 sm:px-6"
     >
       {/* Spinner khi load more (scroll lên) */}
       {isLoadingMore && (

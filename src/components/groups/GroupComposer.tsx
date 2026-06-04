@@ -106,7 +106,7 @@ export default function GroupComposer({ onSend, isSending, status }: GroupCompos
   }
 
   return (
-    <section className="mx-auto max-w-4xl">
+    <section className="mx-auto w-full max-w-4xl">
       {(isDisconnected || status === 'reconnecting') && (
         <p className={`mb-2 text-center text-sm ${isDisconnected ? 'text-rose-400' : 'text-amber-400'}`}>
           {isDisconnected ? 'Mất kết nối, đang thử lại...' : 'Đang kết nối lại...'}
@@ -154,7 +154,7 @@ export default function GroupComposer({ onSend, isSending, status }: GroupCompos
         </div>
       )}
 
-      <div className="mb-4 flex items-center gap-2 rounded-full bg-white px-2 py-2">
+      <div className="flex items-center gap-2 rounded-full bg-white px-2 py-2 shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
         <div className="flex min-h-[58px] flex-1 items-center gap-3 rounded-full bg-white px-4 py-3 shadow-[0_14px_34px_rgba(15,23,42,0.10)]">
           <button
             type="button"
