@@ -27,10 +27,9 @@ export const useLogin = () => {
     }
 
    try {
-    await LoginService({ emailOrUsername: email, password });
-
-    const me = await getMeService();
-    login(me);
+    const response = await LoginService({ emailOrUsername: email, password });
+    const user = response.data?.user ?? await getMeService();
+    login(user);
     return true;
 
   } catch (err: unknown) {

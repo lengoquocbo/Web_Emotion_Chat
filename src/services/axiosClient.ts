@@ -46,8 +46,8 @@ function isLoginPage() {
   return window.location.pathname === '/login'
 }
 
-function isPublicAuthPage() {
-  return ['/login', '/register'].includes(window.location.pathname)
+function isAuthMeRequest(url?: string) {
+  return !!url && url.includes('/api/Auth/me')
 }
 
 function isRefreshableRequest(url?: string) {
@@ -66,7 +66,7 @@ function shouldSkipRefresh(url?: string) {
     return true
   }
 
-  if (isPublicAuthPage() && url.includes('/api/Auth/me')) {
+  if (isAuthMeRequest(url)) {
     return true
   }
 
@@ -106,6 +106,10 @@ axiosClient.interceptors.response.use(
 
     const status = error.response.status
     const originalRequest = error.config as RetriableAxiosRequestConfig | undefined
+
+    if (status === 401 && isAuthMeRequest(originalRequest?.url)) {
+      return Promise.reject(error)
+    }
 
     if (
       status === 401 &&
